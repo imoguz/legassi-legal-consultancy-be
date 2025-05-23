@@ -25,11 +25,27 @@ require("./src/configs/dbConnection")();
 app.use(express.json());
 
 // ----- cors configuration -----
+// const cors = require("cors");
+
+// const corsOptions = {
+//   origin: process.env.ALLOWED_ORIGINS?.split(","),
+//   credentials: true, // Required for sessions with cookies
+// };
+
+// app.use(cors(corsOptions));
 const cors = require("cors");
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",");
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(","),
-  credentials: true, // Required for sessions with cookies
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
