@@ -17,9 +17,9 @@ app.use(helmet());
 require("./src/configs/dbConnection")();
 
 // ----- HTTP Logging with Morgan -----
-if (process.env.NODE_ENV === "development") {
-  app.use(require("morgan")("dev"));
-}
+// if (process.env.NODE_ENV === "development") {
+//   app.use(require("morgan")("dev"));
+// }
 
 // ----- Convert to JSON -----
 app.use(express.json());
@@ -40,10 +40,10 @@ app.use(globalLimiter);
 
 // ----- middlewares -----
 const queryHandler = require("./src/middlewares/queryHandler");
-const logger = require("./src/middlewares/logger");
+// const logger = require("./src/middlewares/logger");
 
 app.use(queryHandler);
-app.use(logger);
+// app.use(logger);
 
 // ----- Healthcheck endpoint -----
 app.get("/api/v1/health", (req, res) => {
