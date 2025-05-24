@@ -68,7 +68,7 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   const strongPasswordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@#!%*?.&])[A-Za-z\d$@$!%*?.&]{8,32}$/;
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>/?`~\-])[A-Za-z\d!@#$%^&*()_+[\]{};':"\\|,.<>/?`~\-]{8,32}$/;
 
   if (!strongPasswordRegex.test(this.password)) {
     throw new Error(
