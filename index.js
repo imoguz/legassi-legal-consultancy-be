@@ -25,7 +25,7 @@ require("./src/configs/dbConnection")();
 app.use(express.json());
 
 // ----- cors configuration -----
-// const cors = require("cors");
+const cors = require("cors");
 
 // const corsOptions = {
 //   origin: process.env.ALLOWED_ORIGINS?.split(","),
@@ -33,22 +33,20 @@ app.use(express.json());
 // };
 
 // app.use(cors(corsOptions));
-const cors = require("cors");
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",");
+//
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (!origin || process.env.ALLOWED_ORIGINS?.split(",").includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   credentials: true,
+// };
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+app.use(require("cors")());
 
 // ----- Rate Limiting -----
 const { globalLimiter } = require("./src/middlewares/rateLimiter");
@@ -61,18 +59,17 @@ const queryHandler = require("./src/middlewares/queryHandler");
 app.use(queryHandler);
 // app.use(logger);
 
-// ----- Healthcheck endpoint -----
-app.get("/api/v1/health", (req, res) => {
-  res.send({
-    message: "Welcome to " + packagejson.name,
-
-    user: req.user ? req.user : null,
-  });
-});
-
 // ----- routes -----
 const routes = require("./src/routes");
 app.use("/api/v1", routes);
+
+// ----- main path -----
+app.all("/", (req, res) => {
+  res.send({
+    message: "Welcome to " + packagejson.name,
+    user: req.user ? req.user : null,
+  });
+});
 
 // ----- 404 Catch-All Middleware -----
 app.use((req, res, next) => {
