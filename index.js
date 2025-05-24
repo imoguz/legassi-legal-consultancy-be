@@ -27,26 +27,12 @@ app.use(express.json());
 // ----- cors configuration -----
 const cors = require("cors");
 
-// const corsOptions = {
-//   origin: process.env.ALLOWED_ORIGINS?.split(","),
-//   credentials: true, // Required for sessions with cookies
-// };
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS?.split(","),
+  credentials: true, // Required for sessions with cookies
+};
 
-// app.use(cors(corsOptions));
-
-//
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     if (!origin || process.env.ALLOWED_ORIGINS?.split(",").includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   credentials: true,
-// };
-
-app.use(require("cors")());
+app.use(cors(corsOptions));
 
 // ----- Rate Limiting -----
 const { globalLimiter } = require("./src/middlewares/rateLimiter");
