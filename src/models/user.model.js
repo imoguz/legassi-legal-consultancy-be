@@ -67,10 +67,10 @@ const userSchema = new Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  const strongPasswordRegex =
+  const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>/?`~\-])[A-Za-z\d!@#$%^&*()_+[\]{};':"\\|,.<>/?`~\-]{8,32}$/;
 
-  if (!strongPasswordRegex.test(this.password)) {
+  if (!passwordRegex.test(this.password)) {
     throw new Error(
       "Password: 8-32 chars, mix of uppercase, lowercase, numbers & special chars."
     );

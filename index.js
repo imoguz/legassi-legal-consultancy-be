@@ -45,6 +45,12 @@ const queryHandler = require("./src/middlewares/queryHandler");
 app.use(queryHandler);
 // app.use(logger);
 
+// ----- swagger documents -----
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpecs = require("./src/configs/swagger");
+
+app.use("/api/v1/documents", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 // ----- routes -----
 const routes = require("./src/routes");
 app.use("/api/v1", routes);
