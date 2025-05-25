@@ -56,10 +56,14 @@ const routes = require("./src/routes");
 app.use("/api/v1", routes);
 
 // ----- main path -----
-app.all("/", (req, res) => {
+const jwtVerification = require("./src/middlewares/jwt.verification");
+app.all("/", jwtVerification, (req, res) => {
   res.send({
     message: "Welcome to " + packagejson.name,
     user: req.user ? req.user : null,
+    documents: {
+      swagger: "/api/v1/documents",
+    },
   });
 });
 
