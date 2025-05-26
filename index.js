@@ -49,7 +49,7 @@ app.use(queryHandler);
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpecs = require("./src/configs/swagger");
 
-app.use("/api/v1/documents", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use("/api/v1/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // ----- routes -----
 const routes = require("./src/routes");
