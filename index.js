@@ -49,7 +49,7 @@ app.use(queryHandler);
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpecs = require("./src/configs/swagger");
 
-app.use("/api/v1/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use("/api-docs/swagger", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // ----- routes -----
 const routes = require("./src/routes");
@@ -61,7 +61,7 @@ app.all("/", (req, res) => {
     message: "Welcome to " + packagejson.name,
     user: req.user ? req.user : null,
     documents: {
-      swagger: "/api/v1/documents",
+      swagger: "/api-docs/swagger",
     },
   });
 });

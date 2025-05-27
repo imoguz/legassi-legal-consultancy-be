@@ -8,8 +8,8 @@ const {
   refreshToken,
 } = require("../controllers/auth.controller");
 
-router.route("/login").post(login);
-router.route("/refresh-token").post(refreshToken);
-router.route("/logout").get(logout);
+router.post("/login", login);
+router.post("/refresh-token", refreshToken);
+router.get("/logout", logout);
 
 module.exports = router;
