@@ -2,30 +2,28 @@ const router = require("express").Router();
 const uploadSinglePDF = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
 const requireAuth = require("../middlewares/requireAuth");
-const docCtrl = require("../controllers/document.controller");
+const {
+  uploadDocument,
+  getDocument,
+  getDocuments,
+  deleteDocument,
+  updateDocument,
+} = require("../controllers/document.controller");
 
 router.post(
   "/",
   jwtVerification,
   requireAuth(["admin"]),
   uploadSinglePDF,
-  docCtrl.uploadDocument
+  uploadDocument
 );
 
-router.get("/", jwtVerification, docCtrl.getDocuments);
+router.get("/", jwtVerification, getDocuments);
 
-router.delete(
-  "/:id",
-  jwtVerification,
-  requireAuth(["admin"]),
-  docCtrl.deleteDocument
-);
-
-router.put(
-  "/:id",
-  jwtVerification,
-  requireAuth(["admin"]),
-  docCtrl.updateDocument
-);
+router
+  .route("/:id")
+  .get(jwtVerification, getDocument)
+  .delete(jwtVerification, requireAuth(["admin"]), deleteDocument)
+  .put(jwtVerification, requireAuth(["admin"]), updateDocument);
 
 module.exports = router;

@@ -28,7 +28,7 @@ module.exports = {
       },
       uploadedBy: {
         type: "string",
-        description: "User ID of the admin who uploaded the document",
+        description: "Fullname of the admin who uploaded the document",
       },
       createdAt: {
         type: "string",
@@ -45,7 +45,7 @@ module.exports = {
       description: "Standard employment contract within the scope of labor law",
       url: "https://res.cloudinary.com/demo/raw/upload/v1710000000/contracts/sample.pdf",
       public_id: "contracts/sample",
-      uploadedBy: "663b2d80e157eb001fca6a12",
+      uploadedBy: "John Doe",
       createdAt: "2025-05-26T14:22:05.000Z",
       updatedAt: "2025-05-26T14:22:05.000Z",
     },

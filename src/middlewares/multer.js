@@ -1,11 +1,4 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-
-const tempDir = path.join(__dirname, "../temp");
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
 
 const allowedTypes = [
   "application/pdf",
@@ -20,13 +13,7 @@ const allowedTypes = [
   "text/plain",
 ];
 
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, tempDir),
-  filename: (_, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   allowedTypes.includes(file.mimetype)

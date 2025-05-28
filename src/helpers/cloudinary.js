@@ -6,10 +6,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadToCloudinary = async (filePath) => {
-  return await cloudinary.uploader.upload(filePath, {
-    resource_type: "raw", // For PDF and other non-images
-    folder: process.env.CLOUDINARY_UPLOAD_FOLDER,
+const uploadToCloudinaryBuffer = async (buffer, filename) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "raw",
+        folder: process.env.CLOUDINARY_UPLOAD_FOLDER,
+        public_id: filename,
+      },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
   });
 };
 
@@ -20,6 +30,6 @@ const deleteFromCloudinary = async (publicId) => {
 };
 
 module.exports = {
-  uploadToCloudinary,
+  uploadToCloudinaryBuffer,
   deleteFromCloudinary,
 };

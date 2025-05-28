@@ -1,43 +1,70 @@
-const path = require("path");
-const fs = require("fs").promises;
 const Document = require("../models/document.model");
 const {
-  uploadToCloudinary,
+  uploadToCloudinaryBuffer,
   deleteFromCloudinary,
 } = require("../helpers/cloudinary");
-
-const deleteTempFile = async (filePath) => {
-  try {
-    await fs.unlink(filePath);
-    console.log("Temp file deleted");
-  } catch (err) {
-    console.warn("Temp file deletion skipped:", err.message);
-  }
-};
 
 module.exports = {
   uploadDocument: async (req) => {
     if (!req.file) throw new Error("No file uploaded");
 
-    const cloudinaryRes = await uploadToCloudinary(req.file.path);
-    await deleteTempFile(req.file.path);
+    const result = await uploadToCloudinaryBuffer(
+      req.file.buffer,
+      req.file.originalname
+    );
 
     const doc = await Document.create({
       title: req.body.title,
       description: req.body.description,
-      fileUrl: cloudinaryRes.secure_url,
-      cloudinaryId: cloudinaryRes.public_id,
+      fileUrl: result.secure_url,
+      cloudinaryId: result.public_id,
       uploadedBy: req.user.id,
     });
 
     return doc;
   },
 
-  getAllDocuments: async () => {
-    return await Document.find().populate(
+  getOneDocument: async (id) => {
+    const doc = await Document.findById(id).populate(
       "uploadedBy",
-      "firstname lastname role"
+      "firstname lastname"
     );
+
+    if (!doc) throw new Error("Document not found");
+
+    const fullName = doc.uploadedBy
+      ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
+      : "Unknown";
+
+    return {
+      _id: doc._id,
+      title: doc.title,
+      description: doc.description,
+      fileUrl: doc.fileUrl,
+      createdAt: doc.createdAt,
+      uploadedBy: fullName,
+    };
+  },
+
+  getAllDocuments: async () => {
+    const docs = await Document.find().populate(
+      "uploadedBy",
+      "firstname lastname"
+    );
+    return docs.map((doc) => {
+      const fullName = doc.uploadedBy
+        ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
+        : "Unknown";
+
+      return {
+        _id: doc._id,
+        title: doc.title,
+        description: doc.description,
+        fileUrl: doc.fileUrl,
+        createdAt: doc.createdAt,
+        uploadedBy: fullName,
+      };
+    });
   },
 
   deleteDocument: async (id) => {
@@ -54,6 +81,7 @@ module.exports = {
 
     doc.title = data.title || doc.title;
     doc.description = data.description || doc.description;
+
     return await doc.save();
   },
 };
