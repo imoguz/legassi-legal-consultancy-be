@@ -59,7 +59,9 @@ module.exports = {
         },
       },
     },
+  },
 
+  "/ai-search/user-queries": {
     get: {
       summary: "Retrieve past AI search queries of the authenticated user.",
       tags: ["AI Search"],

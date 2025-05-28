@@ -36,7 +36,7 @@ module.exports = {
 
     try {
       const decoded = jwt.verify(token, process.env.VERIFY_KEY);
-      console.log("decoded", decoded);
+
       const user = await User.findById(decoded.userId);
 
       if (!user) {

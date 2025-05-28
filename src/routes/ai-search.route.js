@@ -6,7 +6,7 @@ const requireAuth = require("../middlewares/requireAuth");
 const {
   search,
   getUserQueries,
-} = require("../controllers/aiSearch.controller");
+} = require("../controllers/ai-search.controller");
 
 router.post("/", jwtVerification, requireAuth(), search);
 

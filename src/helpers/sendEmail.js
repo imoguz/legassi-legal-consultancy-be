@@ -3,7 +3,6 @@
 const nodemailer = require("nodemailer");
 
 const verificationTemplate = (user, token) => {
-  console.log("Token", token);
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
         <h2 style="color: #2c3e50; text-align: center;">
@@ -58,8 +57,6 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async ({ to, subject, html, from }) => {
   const info = await transporter.sendMail({ from, to, subject, html });
-
-  console.log("Message sent:", info.messageId);
 };
 
 module.exports = { sendEmail, verificationTemplate };

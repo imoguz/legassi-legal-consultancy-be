@@ -1,7 +1,7 @@
 "use strict";
 
 const { sendQueryToAIService } = require("../services/aiSearch.service");
-const AISearch = require("../models/aiSearch.model");
+const AISearch = require("../models/ai-search.model");
 
 module.exports = {
   search: async (req, res) => {

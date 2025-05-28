@@ -8,11 +8,12 @@ cloudinary.config({
 
 const uploadToCloudinaryBuffer = async (buffer, filename) => {
   return new Promise((resolve, reject) => {
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
     const stream = cloudinary.uploader.upload_stream(
       {
-        resource_type: "raw",
+        resource_type: "image",
         folder: process.env.CLOUDINARY_UPLOAD_FOLDER,
-        public_id: filename,
+        public_id: nameWithoutExt,
       },
       (err, result) => {
         if (err) return reject(err);
@@ -25,7 +26,7 @@ const uploadToCloudinaryBuffer = async (buffer, filename) => {
 
 const deleteFromCloudinary = async (publicId) => {
   return await cloudinary.uploader.destroy(publicId, {
-    resource_type: "raw",
+    resource_type: "image",
   });
 };
 
