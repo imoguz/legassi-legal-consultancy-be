@@ -73,10 +73,22 @@ module.exports = {
     res.status(200).send(data);
   },
 
-  readMany: async (req, res) => {
-    const filter = req.user?.role === "admin" ? {} : { _id: req.user?._id };
-    const data = await req.queryHandler(User, "", filter);
-    res.status(200).send(data);
+  readMany: async (req, res, next) => {
+    try {
+      const baseFilter =
+        req.user?.role === "admin" ? {} : { _id: req.user?._id };
+
+      const data = await req.queryHandler(
+        User,
+        null,
+        ["firstname", "lastname", "email"], // searchable fields
+        baseFilter
+      );
+
+      res.send(data);
+    } catch (err) {
+      next(err);
+    }
   },
 
   update: async (req, res) => {

@@ -1,131 +1,58 @@
+const {
+  pageParam,
+  limitParam,
+  sortParam,
+  orderParam,
+  searchParam,
+  filtersParam,
+  documentIdParam,
+} = require("../components/parameters");
+
 module.exports = {
   "/documents": {
-    post: {
-      summary: "Upload a new document (Admin only)",
-      tags: ["Documents"],
-      security: [{ bearerAuth: [] }],
-      requestBody: {
-        required: true,
-        content: {
-          "multipart/form-data": {
-            schema: {
-              type: "object",
-              properties: {
-                file: {
-                  type: "string",
-                  format: "binary",
-                },
-                title: {
-                  type: "string",
-                },
-                description: {
-                  type: "string",
-                },
-              },
-              required: ["file", "title"],
-            },
-          },
-        },
-      },
-      responses: {
-        201: { description: "Document uploaded successfully" },
-        400: {
-          description: "Bad Request - Missing file or title",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 400,
-                message: "File and title are required.",
-              },
-            },
-          },
-        },
-        401: {
-          description: "Unauthorized - Admin access required",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        403: {
-          description: "Forbidden - Only admin can upload",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 403,
-                message: "Only admins can upload documents.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Failed to upload document.",
-              },
-            },
-          },
-        },
-      },
-    },
-
     get: {
-      summary: "Get list of documents (Public)",
+      summary: "Retrieve a list of documents",
+      description:
+        "Fetches a paginated list of documents with optional filters, sorting, and search.",
       tags: ["Documents"],
       parameters: [
-        {
-          in: "query",
-          name: "search",
-          schema: { type: "string" },
-          description: "Search term",
-        },
-        {
-          in: "query",
-          name: "page",
-          schema: { type: "integer", default: 1 },
-          description: "Page number",
-        },
-        {
-          in: "query",
-          name: "limit",
-          schema: { type: "integer", default: 10 },
-          description: "Items per page",
-        },
+        searchParam,
+        pageParam,
+        limitParam,
+        sortParam,
+        orderParam,
+        filtersParam,
       ],
       responses: {
         200: {
-          description: "List of documents",
+          description: "Documents retrieved successfully.",
           content: {
             "application/json": {
               schema: {
-                type: "array",
-                items: { $ref: "#/components/schemas/Document" },
+                type: "object",
+                properties: {
+                  data: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/Document" },
+                  },
+                  pagination: {
+                    type: "object",
+                    properties: {
+                      total: { type: "integer", example: 45 },
+                      page: { type: "integer", example: 1 },
+                      limit: { type: "integer", example: 10 },
+                      totalPages: { type: "integer", example: 5 },
+                      hasNextPage: { type: "boolean", example: true },
+                      hasPrevPage: { type: "boolean", example: false },
+                    },
+                  },
+                },
               },
             },
           },
         },
         500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Error fetching documents.",
-              },
-            },
-          },
+          $ref: "#/components/responses/ServerError",
         },
       },
     },
@@ -133,183 +60,89 @@ module.exports = {
 
   "/documents/{id}": {
     get: {
-      summary: "Get a document by ID",
+      summary: "Retrieve a single document",
+      description:
+        "Fetches detailed information of a document by its unique identifier.",
       tags: ["Documents"],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-          description: "Document ID",
-        },
-      ],
+      parameters: [documentIdParam],
       responses: {
         200: {
-          description: "Document data",
+          description: "Document retrieved successfully.",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/Document" },
+              schema: {
+                $ref: "#/components/schemas/Document",
+              },
             },
           },
         },
         404: {
-          description: "Document not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Document not found.",
-              },
-            },
-          },
+          $ref: "#/components/responses/NotFound",
         },
         500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Failed to retrieve document.",
-              },
-            },
-          },
+          $ref: "#/components/responses/ServerError",
         },
       },
     },
-
-    put: {
-      summary: "Update a document (Admin only)",
+    delete: {
+      summary: "Delete a document",
+      description:
+        "Removes a document by its unique ID. Admin access required.",
       tags: ["Documents"],
-      security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-          description: "Document ID",
+      parameters: [documentIdParam],
+      responses: {
+        200: {
+          description: "Document deleted successfully.",
         },
-      ],
+        403: {
+          $ref: "#/components/responses/Forbidden",
+        },
+        404: {
+          $ref: "#/components/responses/NotFound",
+        },
+        500: {
+          $ref: "#/components/responses/ServerError",
+        },
+      },
+    },
+    put: {
+      summary: "Update a document",
+      description:
+        "Updates the metadata of a document by ID. Admin access required.",
+      tags: ["Documents"],
+      parameters: [documentIdParam],
       requestBody: {
         required: true,
         content: {
           "application/json": {
             schema: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-              },
+              $ref: "#/components/schemas/Document",
             },
           },
         },
       },
       responses: {
-        202: { description: "Document updated successfully" },
-        404: {
-          description: "Document not found",
+        200: {
+          description: "Document updated successfully.",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Document not found.",
+              schema: {
+                $ref: "#/components/schemas/Document",
               },
             },
           },
         },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Failed to update document",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Internal server error.",
-              },
-            },
-          },
-        },
-      },
-    },
-
-    delete: {
-      summary: "Delete a document (Admin only)",
-      tags: ["Documents"],
-      security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-          description: "Document ID",
-        },
-      ],
-      responses: {
-        204: { description: "Document deleted successfully" },
-        404: {
-          description: "Document not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Document not found.",
-              },
-            },
-          },
-        },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
+        400: {
+          $ref: "#/components/responses/BadRequest",
         },
         403: {
-          description: "Forbidden - Admin only",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 403,
-                message: "Only admins can delete documents.",
-              },
-            },
-          },
+          $ref: "#/components/responses/Forbidden",
+        },
+        404: {
+          $ref: "#/components/responses/NotFound",
         },
         500: {
-          description: "Failed to delete document",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Internal server error.",
-              },
-            },
-          },
+          $ref: "#/components/responses/ServerError",
         },
       },
     },

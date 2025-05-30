@@ -2,6 +2,8 @@ const router = require("express").Router();
 const uploadSinglePDF = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
 const requireAuth = require("../middlewares/requireAuth");
+const queryHandler = require("../middlewares/queryHandler");
+
 const {
   uploadDocument,
   getDocument,
@@ -18,7 +20,7 @@ router.post(
   uploadDocument
 );
 
-router.get("/", jwtVerification, getDocuments);
+router.get("/", jwtVerification, queryHandler, getDocuments);
 
 router
   .route("/:id")

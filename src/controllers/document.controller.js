@@ -1,12 +1,30 @@
 "use strict";
 
-const documentService = require("../services/document.service");
+const Document = require("../models/document.model");
+const {
+  uploadToCloudinaryBuffer,
+  deleteFromCloudinary,
+} = require("../helpers/cloudinary");
 
 module.exports = {
   uploadDocument: async (req, res) => {
     try {
-      const document = await documentService.uploadDocument(req);
-      res.status(201).send(document);
+      if (!req.file) throw new Error("No file uploaded");
+
+      const result = await uploadToCloudinaryBuffer(
+        req.file.buffer,
+        req.file.originalname
+      );
+
+      const doc = await Document.create({
+        title: req.body.title,
+        description: req.body.description,
+        fileUrl: result.secure_url,
+        cloudinaryId: result.public_id,
+        uploadedBy: req.user.id,
+      });
+
+      res.status(201).send(doc);
     } catch (err) {
       res.status(500).send({ message: err.message });
     }
@@ -14,25 +32,63 @@ module.exports = {
 
   getDocument: async (req, res) => {
     try {
-      const docs = await documentService.getOneDocument(req.params.id);
-      res.status(200).send(docs);
+      const doc = await Document.findById(req.params.id).populate(
+        "uploadedBy",
+        "firstname lastname"
+      );
+      if (!doc) throw new Error("Document not found");
+
+      res.status(200).send({
+        _id: doc._id,
+        title: doc.title,
+        description: doc.description,
+        fileUrl: doc.fileUrl,
+        createdAt: doc.createdAt,
+        uploadedBy: doc.uploadedBy
+          ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
+          : "Unknown",
+      });
     } catch (err) {
       res.status(500).send({ message: err.message });
     }
   },
 
-  getDocuments: async (req, res) => {
+  getDocuments: async (req, res, next) => {
     try {
-      const docs = await documentService.getAllDocuments();
-      res.status(200).send(docs);
+      const result = await req.queryHandler(
+        Document,
+        { path: "uploadedBy", select: "firstname lastname" },
+        ["title", "description"]
+      );
+
+      const mapped = result.data.map((doc) => ({
+        _id: doc._id,
+        title: doc.title,
+        description: doc.description,
+        fileUrl: doc.fileUrl,
+        createdAt: doc.createdAt,
+        uploadedBy: doc.uploadedBy
+          ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
+          : "Unknown",
+      }));
+
+      res.send({
+        data: mapped,
+        pagination: result.pagination,
+      });
     } catch (err) {
-      res.status(500).send({ message: err.message });
+      next(err);
     }
   },
 
   deleteDocument: async (req, res) => {
     try {
-      await documentService.deleteDocument(req.params.id);
+      const doc = await Document.findById(req.params.id);
+      if (!doc) throw new Error("Document not found");
+
+      await deleteFromCloudinary(doc.cloudinaryId);
+      await doc.deleteOne();
+
       res.status(204).send();
     } catch (err) {
       res.status(500).send({ message: err.message });
@@ -41,8 +97,14 @@ module.exports = {
 
   updateDocument: async (req, res) => {
     try {
-      const doc = await documentService.updateDocument(req.params.id, req.body);
-      res.status(200).send(doc);
+      const doc = await Document.findById(req.params.id);
+      if (!doc) throw new Error("Document not found");
+
+      doc.title = req.body.title || doc.title;
+      doc.description = req.body.description || doc.description;
+
+      const updated = await doc.save();
+      res.status(200).send(updated);
     } catch (err) {
       res.status(500).send({ message: err.message });
     }

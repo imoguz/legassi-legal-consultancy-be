@@ -8,6 +8,8 @@ const userSchemas = require("./schemas/user.schema");
 const aiSearchSchemas = require("./schemas/ai-search.schema.js");
 const documentSchemas = require("./schemas/document.schema");
 const errorSchemas = require("./schemas/error.schema");
+const sharedParameters = require("./components/parameters");
+const sharedResponses = require("./components/responses");
 
 module.exports = {
   openapi: "3.0.0",
@@ -58,6 +60,12 @@ module.exports = {
       ...aiSearchSchemas,
       ...documentSchemas,
       ...errorSchemas,
+    },
+    parameters: {
+      ...sharedParameters,
+    },
+    responses: {
+      ...sharedResponses,
     },
   },
   security: [

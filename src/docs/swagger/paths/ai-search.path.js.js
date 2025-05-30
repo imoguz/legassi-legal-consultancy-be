@@ -1,7 +1,7 @@
 module.exports = {
   "/ai-search": {
     post: {
-      summary: "Send a legal question to the AI service.",
+      summary: "Send a legal question to the AI service",
       tags: ["AI Search"],
       security: [{ bearerAuth: [] }],
       requestBody: {
@@ -21,49 +21,16 @@ module.exports = {
             },
           },
         },
-        400: {
-          description: "Bad Request – Missing query",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 400,
-                message: "Query field is required.",
-              },
-            },
-          },
-        },
-        401: {
-          description: "Unauthorized – Missing or invalid token",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication token missing or invalid.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "AI service is unavailable. Please try again later.",
-              },
-            },
-          },
-        },
+        400: { $ref: "#/components/responses/BadRequest" },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
 
   "/ai-search/user-queries": {
     get: {
-      summary: "Retrieve past AI search queries of the authenticated user.",
+      summary: "Retrieve past AI search queries of the authenticated user",
       tags: ["AI Search"],
       security: [{ bearerAuth: [] }],
       responses: {
@@ -78,30 +45,8 @@ module.exports = {
             },
           },
         },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "You must be logged in to access this resource.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Unable to fetch query history.",
-              },
-            },
-          },
-        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },

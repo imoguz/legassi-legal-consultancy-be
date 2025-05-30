@@ -7,43 +7,16 @@ module.exports = {
         required: true,
         content: {
           "application/json": {
-            schema: {
-              $ref: "#/components/schemas/User",
-            },
+            schema: { $ref: "#/components/schemas/User" },
           },
         },
       },
       responses: {
-        201: {
-          description: "User created successfully",
-        },
-        400: {
-          description: "Bad Request - Invalid user input",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 400,
-                message: "Username and email are required.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Something went wrong while creating the user.",
-              },
-            },
-          },
-        },
+        201: { description: "User created successfully" },
+        400: { $ref: "#/components/responses/BadRequest" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
-
     get: {
       summary: "Get list of users (Admin only)",
       tags: ["Users"],
@@ -92,42 +65,9 @@ module.exports = {
             },
           },
         },
-        401: {
-          description: "Unauthorized - Missing or invalid token",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        403: {
-          description: "Forbidden - Admin only access",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 403,
-                message: "You do not have permission to access this resource.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "An error occurred while fetching users.",
-              },
-            },
-          },
-        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -147,42 +87,9 @@ module.exports = {
       ],
       responses: {
         302: { description: "Redirect to success or error page" },
-        400: {
-          description: "Bad Request - Token missing",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 400,
-                message: "Token query parameter is required.",
-              },
-            },
-          },
-        },
-        404: {
-          description: "User not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "No user found with this token.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Failed to verify user.",
-              },
-            },
-          },
-        },
+        400: { $ref: "#/components/responses/BadRequest" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -210,42 +117,9 @@ module.exports = {
             },
           },
         },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        404: {
-          description: "User not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "User not found.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Error retrieving user.",
-              },
-            },
-          },
-        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -272,42 +146,9 @@ module.exports = {
       },
       responses: {
         202: { description: "User updated successfully" },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        404: {
-          description: "User not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "User not found.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Failed to update user.",
-              },
-            },
-          },
-        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -326,54 +167,10 @@ module.exports = {
       ],
       responses: {
         204: { description: "User deleted successfully" },
-        401: {
-          description: "Unauthorized",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 401,
-                message: "Authentication required.",
-              },
-            },
-          },
-        },
-        403: {
-          description: "Forbidden - Admin access required",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 403,
-                message: "Only admin users can delete a user.",
-              },
-            },
-          },
-        },
-        404: {
-          description: "User not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "User not found.",
-              },
-            },
-          },
-        },
-        500: {
-          description: "Internal Server Error",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 500,
-                message: "Failed to delete user.",
-              },
-            },
-          },
-        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
