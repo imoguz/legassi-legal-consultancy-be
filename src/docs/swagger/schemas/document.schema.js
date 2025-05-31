@@ -3,7 +3,7 @@
 module.exports = {
   Document: {
     type: "object",
-    required: ["title", "url", "uploadedBy"],
+    required: ["title", "description", "category", "url", "uploadedBy"],
     properties: {
       _id: {
         type: "string",
@@ -15,7 +15,11 @@ module.exports = {
       },
       description: {
         type: "string",
-        description: "Optional description of the document",
+        description: "Description of the document",
+      },
+      category: {
+        type: "string",
+        description: "Category of the document",
       },
       url: {
         type: "string",
@@ -43,6 +47,7 @@ module.exports = {
       _id: "6653f43b6a2c45f1a9e2d123",
       title: "Contract Sample",
       description: "Standard employment contract within the scope of labor law",
+      category: "Labor law",
       url: "https://res.cloudinary.com/demo/raw/upload/v1710000000/contracts/sample.pdf",
       public_id: "contracts/sample",
       uploadedBy: "John Doe",

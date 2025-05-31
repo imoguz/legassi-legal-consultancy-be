@@ -8,6 +8,11 @@ const documentSchema = new Schema(
     },
     description: {
       type: String,
+      required: true,
+    },
+    category: {
+      type: String,
+      required: true,
     },
     fileUrl: {
       type: String,

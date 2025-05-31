@@ -42,6 +42,7 @@ module.exports = {
         _id: doc._id,
         title: doc.title,
         description: doc.description,
+        category: doc.category,
         fileUrl: doc.fileUrl,
         createdAt: doc.createdAt,
         uploadedBy: doc.uploadedBy
@@ -65,6 +66,7 @@ module.exports = {
         _id: doc._id,
         title: doc.title,
         description: doc.description,
+        category: doc.category,
         fileUrl: doc.fileUrl,
         createdAt: doc.createdAt,
         uploadedBy: doc.uploadedBy

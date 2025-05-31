@@ -32,11 +32,16 @@ module.exports = {
 
   getUserQueries: async (req, res) => {
     try {
-      const queries = await AISearch.find({ userId: req.user.id }).sort({
-        createdAt: -1,
-      });
-      res.status(200).send(queries);
+      req.query.filters = {
+        ...(req.query.filters || {}),
+        userId: req.user.id,
+      };
+
+      const result = await req.queryHandler(AISearch, null, ["query"]);
+
+      res.status(200).send(result);
     } catch (err) {
+      console.error(err);
       res.status(500).send({ error: "Failed to fetch queries." });
     }
   },

@@ -30,17 +30,72 @@ module.exports = {
 
   "/ai-search/user-queries": {
     get: {
-      summary: "Retrieve past AI search queries of the authenticated user",
+      summary:
+        "Retrieve paginated AI search query history of the authenticated user",
       tags: ["AI Search"],
       security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          in: "query",
+          name: "page",
+          schema: { type: "integer", default: 1 },
+          description: "Page number for pagination",
+        },
+        {
+          in: "query",
+          name: "limit",
+          schema: { type: "integer", default: 10 },
+          description: "Number of items per page",
+        },
+        {
+          in: "query",
+          name: "sort",
+          schema: { type: "string", default: "createdAt" },
+          description: "Field to sort by (e.g., createdAt, query)",
+        },
+        {
+          in: "query",
+          name: "order",
+          schema: {
+            type: "string",
+            enum: ["asc", "desc"],
+            default: "desc",
+          },
+          description: "Sort order (ascending or descending)",
+        },
+        {
+          in: "query",
+          name: "search",
+          schema: { type: "string" },
+          description: "Text to search in 'query' field",
+        },
+        {
+          in: "query",
+          name: "filters",
+          schema: {
+            type: "string",
+            example: '{"response.someKey":"someValue"}',
+          },
+          description: "Optional MongoDB-style filters encoded as JSON string",
+        },
+      ],
       responses: {
         200: {
-          description: "List of previous queries",
+          description: "Paginated list of previous AI queries",
           content: {
             "application/json": {
               schema: {
-                type: "array",
-                items: { $ref: "#/components/schemas/AIQueryHistory" },
+                type: "object",
+                properties: {
+                  total: { type: "integer", example: 42 },
+                  page: { type: "integer", example: 1 },
+                  pages: { type: "integer", example: 5 },
+                  limit: { type: "integer", example: 10 },
+                  data: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/AIQueryHistory" },
+                  },
+                },
               },
             },
           },
