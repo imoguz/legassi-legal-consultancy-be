@@ -18,6 +18,13 @@ module.exports = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      err.statusCode = 401;
+      err.message = "Access token expired";
+    } else if (err.name === "JsonWebTokenError") {
+      err.statusCode = 401;
+      err.message = "Invalid token";
+    }
     next(err);
   }
 };

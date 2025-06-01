@@ -22,7 +22,7 @@ module.exports = async ({ email, password, userId }, refreshToken = null) => {
     }
   }
 
-  // Refresh - if oonly userId exist
+  // Refresh - if only userId exist
   if (userId) {
     user = await User.findById(userId);
     if (!user || !user.isActive || !user.isVerified) {
@@ -37,7 +37,7 @@ module.exports = async ({ email, password, userId }, refreshToken = null) => {
       role: user.role,
     },
     process.env.ACCESS_KEY,
-    { expiresIn: "24h" }
+    { expiresIn: "30m" }
   );
 
   const newRefreshToken =
