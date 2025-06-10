@@ -75,5 +75,5 @@ app.use((req, res, next) => {
 const errorHandler = require("./src/middlewares/errorHandler");
 app.use(errorHandler);
 
-// ----- listenning server -----
-app.listen(PORT, () => console.log("Server is running on", PORT));
+// ----- Start server -----
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
