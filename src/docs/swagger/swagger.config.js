@@ -3,9 +3,13 @@
 const packagejson = require("../../../package.json");
 const userPaths = require("./paths/user.path");
 const aiSearchPaths = require("./paths/ai-search.path.js");
+const aiSessionPaths = require("./paths/ai-session.path.js");
+const aiChatPaths = require("./paths/ai-chat.path.js");
 const documentPaths = require("./paths/document.path");
 const userSchemas = require("./schemas/user.schema");
 const aiSearchSchemas = require("./schemas/ai-search.schema.js");
+const aiSessionSchemas = require("./schemas/ai-session.schema.js");
+const aiChatSchemas = require("./schemas/ai-chat.schema.js");
 const documentSchemas = require("./schemas/document.schema");
 const errorSchemas = require("./schemas/error.schema");
 const sharedParameters = require("./components/parameters");
@@ -38,6 +42,14 @@ module.exports = {
       description: "AI Search management endpoints",
     },
     {
+      name: "AI Session",
+      description: "AI Session management endpoints",
+    },
+    {
+      name: "AI Chat",
+      description: "AI Chat management endpoints",
+    },
+    {
       name: "Documents",
       description: "Document management endpoints",
     },
@@ -45,6 +57,8 @@ module.exports = {
   paths: {
     ...userPaths,
     ...aiSearchPaths,
+    ...aiSessionPaths,
+    ...aiChatPaths,
     ...documentPaths,
   },
   components: {
@@ -58,6 +72,8 @@ module.exports = {
     schemas: {
       ...userSchemas,
       ...aiSearchSchemas,
+      ...aiSessionSchemas,
+      ...aiChatSchemas,
       ...documentSchemas,
       ...errorSchemas,
     },
