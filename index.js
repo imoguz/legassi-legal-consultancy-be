@@ -27,9 +27,31 @@ app.use(express.json());
 // ----- cors configuration -----
 const cors = require("cors");
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+  : [];
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(","),
-  credentials: true, // Required for sessions with cookies
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS policy: This origin is not allowed."));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Access-Control-Allow-Credentials",
+  ],
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
