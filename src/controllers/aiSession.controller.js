@@ -34,16 +34,11 @@ const getSession = async (req, res, next) => {
 
 const getAllSessions = async (req, res, next) => {
   try {
-    const baseFilter = req.user.role === "admin" ? {} : { user: req.user.id };
+    const sessions = await AiSession.find({ user: req.user.id }).sort({
+      createdAt: -1,
+    });
 
-    const sessions = await req.queryHandler(
-      AiSession,
-      null,
-      ["title"], // searchable fields
-      baseFilter
-    );
-
-    res.json(sessions);
+    res.status(200).json(sessions);
   } catch (err) {
     next(err);
   }
