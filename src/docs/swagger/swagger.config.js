@@ -2,14 +2,14 @@
 
 const packagejson = require("../../../package.json");
 const userPaths = require("./paths/user.path");
-const aiSearchPaths = require("./paths/ai-search.path.js");
-const aiSessionPaths = require("./paths/ai-session.path.js");
 const aiChatPaths = require("./paths/ai-chat.path.js");
+const aiSessionPaths = require("./paths/ai-session.path.js");
+const aiDocumentSearchPaths = require("./paths/ai-document-search.path.js");
 const documentPaths = require("./paths/document.path");
 const userSchemas = require("./schemas/user.schema");
-const aiSearchSchemas = require("./schemas/ai-search.schema.js");
-const aiSessionSchemas = require("./schemas/ai-session.schema.js");
 const aiChatSchemas = require("./schemas/ai-chat.schema.js");
+const aiSessionSchemas = require("./schemas/ai-session.schema.js");
+const aiDocumentSearchSchemas = require("./schemas/ai-document-search.schema.js");
 const documentSchemas = require("./schemas/document.schema");
 const errorSchemas = require("./schemas/error.schema");
 const sharedParameters = require("./components/parameters");
@@ -38,16 +38,16 @@ module.exports = {
       description: "User management endpoints",
     },
     {
-      name: "AI Search",
-      description: "AI Search management endpoints",
+      name: "AI Chat",
+      description: "AI Chat management endpoints",
     },
     {
       name: "AI Session",
       description: "AI Session management endpoints",
     },
     {
-      name: "AI Chat",
-      description: "AI Chat management endpoints",
+      name: "AI Document Search",
+      description: "AI Document Search management endpoints",
     },
     {
       name: "Documents",
@@ -56,9 +56,9 @@ module.exports = {
   ],
   paths: {
     ...userPaths,
-    ...aiSearchPaths,
-    ...aiSessionPaths,
     ...aiChatPaths,
+    ...aiSessionPaths,
+    ...aiDocumentSearchPaths,
     ...documentPaths,
   },
   components: {
@@ -71,9 +71,9 @@ module.exports = {
     },
     schemas: {
       ...userSchemas,
-      ...aiSearchSchemas,
-      ...aiSessionSchemas,
       ...aiChatSchemas,
+      ...aiSessionSchemas,
+      ...aiDocumentSearchSchemas,
       ...documentSchemas,
       ...errorSchemas,
     },

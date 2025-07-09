@@ -13,8 +13,6 @@ module.exports = {
       },
       responses: {
         201: { description: "User created successfully" },
-        400: { $ref: "#/components/responses/BadRequest" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
     get: {
@@ -65,9 +63,6 @@ module.exports = {
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        403: { $ref: "#/components/responses/Forbidden" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -87,9 +82,6 @@ module.exports = {
       ],
       responses: {
         302: { description: "Redirect to success or error page" },
-        400: { $ref: "#/components/responses/BadRequest" },
-        404: { $ref: "#/components/responses/NotFound" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -117,9 +109,6 @@ module.exports = {
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        404: { $ref: "#/components/responses/NotFound" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -146,9 +135,6 @@ module.exports = {
       },
       responses: {
         202: { description: "User updated successfully" },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        404: { $ref: "#/components/responses/NotFound" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -167,10 +153,6 @@ module.exports = {
       ],
       responses: {
         204: { description: "User deleted successfully" },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        403: { $ref: "#/components/responses/Forbidden" },
-        404: { $ref: "#/components/responses/NotFound" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },

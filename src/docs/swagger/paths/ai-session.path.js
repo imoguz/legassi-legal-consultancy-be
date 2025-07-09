@@ -26,9 +26,6 @@ module.exports = {
             },
           },
         },
-        400: { $ref: "#/components/responses/BadRequest" },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -85,8 +82,6 @@ module.exports = {
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -114,20 +109,6 @@ module.exports = {
             },
           },
         },
-        404: {
-          description: "Session not found",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Session not found.",
-              },
-            },
-          },
-        },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -166,20 +147,6 @@ module.exports = {
             },
           },
         },
-        404: {
-          description: "Session not found or not owned",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Session not found or not yours.",
-              },
-            },
-          },
-        },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
 
@@ -197,20 +164,6 @@ module.exports = {
       ],
       responses: {
         204: { description: "Session deleted successfully" },
-        404: {
-          description: "Session not found or not owned",
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ErrorResponse" },
-              example: {
-                statusCode: 404,
-                message: "Session not found or not yours.",
-              },
-            },
-          },
-        },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
