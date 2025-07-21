@@ -55,10 +55,12 @@ module.exports = {
       // Redirect to login page after verification
       res
         .status(302)
-        .redirect(`${process.env.CLIENT_URL}/auth/verified-success`);
+        .redirect(`${process.env.FRONTEND_URL}/auth/verified-success`);
     } catch (err) {
       console.error(err);
-      return res.redirect(`${process.env.CLIENT_URL}/auth/verification-error`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/auth/verification-error`
+      );
     }
   },
 

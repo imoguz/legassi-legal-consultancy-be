@@ -28,7 +28,7 @@ module.exports = {
       description: "Local server",
     },
     {
-      url: `${process.env.PRODUCTION_URL}/api/v1`,
+      url: `${process.env.BACKEND_URL}/api/v1`,
       description: "Production server",
     },
   ],
