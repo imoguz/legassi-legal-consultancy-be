@@ -59,7 +59,7 @@ module.exports = {
       const result = await req.queryHandler(
         Document,
         { path: "uploadedBy", select: "firstname lastname" },
-        ["title", "description"]
+        ["title", "description", "category"] // search fields
       );
 
       const mapped = result.data.map((doc) => ({

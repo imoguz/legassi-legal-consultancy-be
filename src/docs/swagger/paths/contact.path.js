@@ -1,23 +1,33 @@
+const {
+  page,
+  limit,
+  sortBy,
+  sortOrder,
+  search,
+  filters,
+  id,
+} = require("../components/parameters");
+
 module.exports = {
-  "/documents": {
+  "/contacts": {
     post: {
-      summary: "Upload a document",
-      tags: ["Documents"],
+      summary: "Create a new contact",
+      tags: ["Contacts"],
       security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
-          "multipart/form-data": {
-            schema: { $ref: "#/components/schemas/DocumentCreateInput" },
+          "application/json": {
+            schema: { $ref: "#/components/schemas/CreateContactInput" },
           },
         },
       },
       responses: {
         201: {
-          description: "Document uploaded successfully",
+          description: "Contact created successfully",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/Document" },
+              schema: { $ref: "#/components/schemas/Contact" },
             },
           },
         },
@@ -26,20 +36,13 @@ module.exports = {
       },
     },
     get: {
-      summary: "List documents",
-      tags: ["Documents"],
+      summary: "Get list of contacts",
+      tags: ["Contacts"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        { $ref: "#/components/parameters/page" },
-        { $ref: "#/components/parameters/limit" },
-        { $ref: "#/components/parameters/sortBy" },
-        { $ref: "#/components/parameters/sortOrder" },
-        { $ref: "#/components/parameters/search" },
-        { $ref: "#/components/parameters/filters" },
-      ],
+      parameters: [page, limit, sortBy, sortOrder, search, filters],
       responses: {
         200: {
-          description: "Paginated list of documents",
+          description: "Paginated list of contacts",
           content: {
             "application/json": {
               schema: {
@@ -49,7 +52,7 @@ module.exports = {
                     properties: {
                       data: {
                         type: "array",
-                        items: { $ref: "#/components/schemas/Document" },
+                        items: { $ref: "#/components/schemas/Contact" },
                       },
                     },
                   },
@@ -62,59 +65,57 @@ module.exports = {
       },
     },
   },
-
-  "/documents/{id}": {
+  "/contacts/{id}": {
     get: {
-      summary: "Get a document by ID",
-      tags: ["Documents"],
+      summary: "Get a contact by ID",
+      tags: ["Contacts"],
       security: [{ bearerAuth: [] }],
-      parameters: [{ $ref: "#/components/parameters/id" }],
+      parameters: [id],
       responses: {
         200: {
-          description: "Document found",
+          description: "Contact details",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/Document" },
+              schema: { $ref: "#/components/schemas/Contact" },
             },
           },
         },
         404: { $ref: "#/components/responses/NotFound" },
-        401: { $ref: "#/components/responses/Unauthorized" },
       },
     },
     put: {
-      summary: "Update a document",
-      tags: ["Documents"],
+      summary: "Update a contact by ID",
+      tags: ["Contacts"],
       security: [{ bearerAuth: [] }],
-      parameters: [{ $ref: "#/components/parameters/id" }],
+      parameters: [id],
       requestBody: {
         required: true,
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/DocumentUpdateInput" },
+            schema: { $ref: "#/components/schemas/UpdateContactInput" },
           },
         },
       },
       responses: {
-        200: {
-          description: "Document updated",
+        202: {
+          description: "Contact updated successfully",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/Document" },
+              schema: { $ref: "#/components/schemas/Contact" },
             },
           },
         },
-        400: { $ref: "#/components/responses/BadRequest" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },
     delete: {
-      summary: "Delete a document",
-      tags: ["Documents"],
+      summary: "Delete a contact by ID",
+      tags: ["Contacts"],
       security: [{ bearerAuth: [] }],
-      parameters: [{ $ref: "#/components/parameters/id" }],
+      parameters: [id],
       responses: {
-        204: { description: "Document deleted successfully" },
+        204: { description: "Contact deleted successfully" },
+        403: { $ref: "#/components/responses/Forbidden" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },

@@ -1,0 +1,52 @@
+module.exports = {
+  Contact: {
+    type: "object",
+    required: ["fullName", "createdBy"],
+    properties: {
+      _id: { type: "string", description: "MongoDB ObjectId" },
+      fullName: { type: "string", example: "John Doe" },
+      email: { type: "string", format: "email", example: "john@example.com" },
+      phone: { type: "string", example: "+90 555 444 3322" },
+      address: { type: "string", example: "Istanbul, Turkey" },
+      type: {
+        type: "string",
+        enum: ["individual", "company"],
+        example: "individual",
+      },
+      companyName: { type: "string", example: "ACME Corp." },
+      taxNumber: { type: "string", example: "1234567890" },
+      notes: { type: "string", example: "VIP customer" },
+      isDeleted: { type: "boolean", default: false },
+      createdBy: { type: "string", description: "User ID" },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+  CreateContactInput: {
+    type: "object",
+    required: ["fullName"],
+    properties: {
+      fullName: { type: "string", example: "John Doe" },
+      email: { type: "string", example: "john@example.com" },
+      phone: { type: "string", example: "+90 555 444 3322" },
+      address: { type: "string" },
+      type: { type: "string", enum: ["individual", "company"] },
+      companyName: { type: "string" },
+      taxNumber: { type: "string" },
+      notes: { type: "string" },
+    },
+  },
+  UpdateContactInput: {
+    type: "object",
+    properties: {
+      fullName: { type: "string" },
+      email: { type: "string" },
+      phone: { type: "string" },
+      address: { type: "string" },
+      type: { type: "string", enum: ["individual", "company"] },
+      companyName: { type: "string" },
+      taxNumber: { type: "string" },
+      notes: { type: "string" },
+    },
+  },
+};

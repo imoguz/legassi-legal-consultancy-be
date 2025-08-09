@@ -1,140 +1,78 @@
 module.exports = {
-  "/ai-session": {
+  "/ai-sessions": {
     post: {
-      summary: "Create a new AI chat session",
+      summary: "Create a new AI session",
       tags: ["AI Session"],
       security: [{ bearerAuth: [] }],
       requestBody: {
-        required: true,
+        required: false,
         content: {
           "application/json": {
-            schema: {
-              type: "object",
-              properties: {
-                title: { type: "string", example: "New Chat" },
-              },
-            },
+            schema: { $ref: "#/components/schemas/CreateAiSessionRequest" },
           },
         },
       },
       responses: {
         201: {
-          description: "Session created",
+          description: "Session created successfully",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/AISession" },
+              schema: { $ref: "#/components/schemas/AiSession" },
             },
           },
         },
+        400: { $ref: "#/components/responses/BadRequest" },
+        401: { $ref: "#/components/responses/Unauthorized" },
       },
     },
-
     get: {
-      summary: "Get all AI chat sessions of the authenticated user",
+      summary: "Get all sessions for the authenticated user",
       tags: ["AI Session"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        { $ref: "#/components/parameters/pageParam" },
-        { $ref: "#/components/parameters/limitParam" },
-        { $ref: "#/components/parameters/sortParam" },
-        { $ref: "#/components/parameters/orderParam" },
-        {
-          in: "query",
-          name: "search",
-          schema: { type: "string" },
-          description: "Search text in session titles",
-        },
-        {
-          in: "query",
-          name: "filters",
-          schema: {
-            type: "string",
-            example: '{"isArchived":false}',
-          },
-          description: "MongoDB-style filters as JSON string",
-        },
-      ],
       responses: {
         200: {
-          description: "Paginated list of sessions",
+          description: "List of sessions",
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                properties: {
-                  data: {
-                    type: "array",
-                    items: { $ref: "#/components/schemas/AISession" },
-                  },
-                  pagination: {
-                    type: "object",
-                    properties: {
-                      total: { type: "integer" },
-                      page: { type: "integer" },
-                      limit: { type: "integer" },
-                      totalPages: { type: "integer" },
-                      hasNextPage: { type: "boolean" },
-                      hasPrevPage: { type: "boolean" },
-                    },
-                  },
-                },
+                type: "array",
+                items: { $ref: "#/components/schemas/AiSession" },
               },
             },
           },
         },
+        401: { $ref: "#/components/responses/Unauthorized" },
       },
     },
   },
-
-  "/ai-session/{id}": {
+  "/ai-sessions/{id}": {
     get: {
-      summary: "Get a specific AI chat session by ID",
+      summary: "Get a single AI session by ID",
       tags: ["AI Session"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-          description: "Session ID",
-        },
-      ],
+      parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         200: {
-          description: "Session data",
+          description: "Session retrieved",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/AISession" },
+              schema: { $ref: "#/components/schemas/AiSession" },
             },
           },
         },
+        404: { $ref: "#/components/responses/NotFound" },
       },
     },
-
     put: {
-      summary: "Update an AI chat session",
+      summary: "Update an AI session",
       tags: ["AI Session"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-        },
-      ],
+      parameters: [{ $ref: "#/components/parameters/id" }],
       requestBody: {
         required: true,
         content: {
           "application/json": {
-            schema: {
-              type: "object",
-              properties: {
-                title: { type: "string", example: "Updated Chat Title" },
-                isArchived: { type: "boolean", example: true },
-              },
-            },
+            schema: { $ref: "#/components/schemas/UpdateAiSessionRequest" },
           },
         },
       },
@@ -143,27 +81,21 @@ module.exports = {
           description: "Session updated",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/AISession" },
+              schema: { $ref: "#/components/schemas/AiSession" },
             },
           },
         },
+        404: { $ref: "#/components/responses/NotFound" },
       },
     },
-
     delete: {
-      summary: "Delete an AI chat session",
+      summary: "Delete an AI session",
       tags: ["AI Session"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          in: "path",
-          name: "id",
-          required: true,
-          schema: { type: "string" },
-        },
-      ],
+      parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         204: { description: "Session deleted successfully" },
+        404: { $ref: "#/components/responses/NotFound" },
       },
     },
   },

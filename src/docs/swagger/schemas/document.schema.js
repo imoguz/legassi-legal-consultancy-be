@@ -1,58 +1,47 @@
-"use strict";
-
 module.exports = {
   Document: {
     type: "object",
-    required: ["title", "description", "category", "url", "uploadedBy"],
+    required: [
+      "title",
+      "description",
+      "category",
+      "fileUrl",
+      "cloudinaryId",
+      "uploadedBy",
+    ],
     properties: {
-      _id: {
+      _id: { type: "string", example: "6653f43b6a2c45f1a9e2d123" },
+      title: { type: "string", example: "Contract Sample" },
+      description: { type: "string", example: "Standard employment contract" },
+      category: { type: "string", example: "Labor law" },
+      fileUrl: {
         type: "string",
-        description: "The auto-generated ID of the document",
-      },
-      title: {
-        type: "string",
-        description: "Title of the PDF document",
-      },
-      description: {
-        type: "string",
-        description: "Description of the document",
-      },
-      category: {
-        type: "string",
-        description: "Category of the document",
-      },
-      url: {
-        type: "string",
-        description: "URL of the uploaded document (Cloudinary)",
         format: "uri",
+        example:
+          "https://res.cloudinary.com/demo/raw/upload/contracts/sample.pdf",
       },
-      public_id: {
-        type: "string",
-        description: "Cloudinary public ID for the document",
-      },
-      uploadedBy: {
-        type: "string",
-        description: "Fullname of the admin who uploaded the document",
-      },
-      createdAt: {
-        type: "string",
-        format: "date-time",
-      },
-      updatedAt: {
-        type: "string",
-        format: "date-time",
-      },
+      cloudinaryId: { type: "string", example: "contracts/sample" },
+      uploadedBy: { type: "string", example: "John Doe" },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
     },
-    example: {
-      _id: "6653f43b6a2c45f1a9e2d123",
-      title: "Contract Sample",
-      description: "Standard employment contract within the scope of labor law",
-      category: "Labor law",
-      url: "https://res.cloudinary.com/demo/raw/upload/v1710000000/contracts/sample.pdf",
-      public_id: "contracts/sample",
-      uploadedBy: "John Doe",
-      createdAt: "2025-05-26T14:22:05.000Z",
-      updatedAt: "2025-05-26T14:22:05.000Z",
+  },
+  DocumentCreateInput: {
+    type: "object",
+    required: ["title", "description", "category", "file"],
+    properties: {
+      title: { type: "string", example: "Contract Sample" },
+      description: { type: "string", example: "Standard employment contract" },
+      category: { type: "string", example: "Labor law" },
+      file: { type: "string", format: "binary" },
+    },
+  },
+  DocumentUpdateInput: {
+    type: "object",
+    properties: {
+      title: { type: "string", example: "Updated Contract" },
+      description: { type: "string", example: "Updated description" },
+      category: { type: "string", example: "Corporate law" },
     },
   },
 };

@@ -1,26 +1,34 @@
 "use strict";
 
-const packagejson = require("../../../package.json");
-const userPaths = require("./paths/user.path");
-const aiChatPaths = require("./paths/ai-chat.path.js");
-const aiSessionPaths = require("./paths/ai-session.path.js");
-const aiDocumentSearchPaths = require("./paths/ai-document-search.path.js");
-const documentPaths = require("./paths/document.path");
-const userSchemas = require("./schemas/user.schema");
-const aiChatSchemas = require("./schemas/ai-chat.schema.js");
-const aiSessionSchemas = require("./schemas/ai-session.schema.js");
-const aiDocumentSearchSchemas = require("./schemas/ai-document-search.schema.js");
-const documentSchemas = require("./schemas/document.schema");
+const pkg = require("../../../package.json");
+const parameters = require("./components/parameters");
+const responses = require("./components/responses");
+const commonSchemas = require("./schemas/common.schema");
 const errorSchemas = require("./schemas/error.schema");
-const sharedParameters = require("./components/parameters");
-const sharedResponses = require("./components/responses");
+
+const authPaths = require("./paths/auth.path");
+const authSchemas = require("./schemas/auth.schema");
+const userPaths = require("./paths/user.path");
+const userSchemas = require("./schemas/user.schema");
+const matterPaths = require("./paths/matter.path");
+const matterSchemas = require("./schemas/matter.schema");
+const aiChatSchemas = require("./schemas/ai-chat.schema");
+const aiChatPaths = require("./paths/ai-chat.path");
+const aiDocumentSearchPaths = require("./paths/aiDocumentSearch.path");
+const aiDocumentSearchSchemas = require("./schemas/aiDocumentSearch.schema");
+const aiSessionPaths = require("./paths/ai-session.path");
+const aiSessionSchemas = require("./schemas/ai-session.schema");
+const contactPaths = require("./paths/contact.path");
+const contactSchemas = require("./schemas/contact.schema");
+const documentPaths = require("./paths/document.path");
+const documentSchemas = require("./schemas/document.schema");
 
 module.exports = {
   openapi: "3.0.0",
   info: {
-    title: packagejson.name,
-    version: packagejson.version,
-    description: packagejson.description || "API Documentation",
+    title: "Codencia Legal Consultancy API",
+    version: pkg.version,
+    description: pkg.description || "API Documentation",
   },
   servers: [
     {
@@ -33,60 +41,46 @@ module.exports = {
     },
   ],
   tags: [
-    {
-      name: "Users",
-      description: "User management endpoints",
-    },
-    {
-      name: "AI Chat",
-      description: "AI Chat management endpoints",
-    },
-    {
-      name: "AI Session",
-      description: "AI Session management endpoints",
-    },
+    { name: "Auth", description: "User authentication operations" },
+    { name: "Users", description: "User management operations" },
+    { name: "AI Chat", description: "AI chat interactions" },
+    { name: "AI Session", description: "AI session management" },
     {
       name: "AI Document Search",
-      description: "AI Document Search management endpoints",
+      description: "AI-powered document search operations",
     },
-    {
-      name: "Documents",
-      description: "Document management endpoints",
-    },
+    { name: "Matters", description: "Matter/Case management operations" },
+    { name: "Contacts", description: "Contact management operations" },
+    { name: "Documents", description: "Document management operations" },
   ],
   paths: {
+    ...authPaths,
     ...userPaths,
+    ...matterPaths,
     ...aiChatPaths,
-    ...aiSessionPaths,
     ...aiDocumentSearchPaths,
+    ...aiSessionPaths,
+    ...contactPaths,
     ...documentPaths,
   },
   components: {
     securitySchemes: {
-      bearerAuth: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "JWT",
-      },
+      bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
     },
+    parameters,
+    responses,
     schemas: {
-      ...userSchemas,
-      ...aiChatSchemas,
-      ...aiSessionSchemas,
-      ...aiDocumentSearchSchemas,
-      ...documentSchemas,
+      ...authSchemas,
+      ...commonSchemas,
       ...errorSchemas,
-    },
-    parameters: {
-      ...sharedParameters,
-    },
-    responses: {
-      ...sharedResponses,
+      ...matterSchemas,
+      ...aiChatSchemas,
+      ...aiDocumentSearchSchemas,
+      ...userSchemas,
+      ...aiSessionSchemas,
+      ...contactSchemas,
+      ...documentSchemas,
     },
   },
-  security: [
-    {
-      bearerAuth: [],
-    },
-  ],
+  security: [{ bearerAuth: [] }],
 };

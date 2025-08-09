@@ -1,3 +1,5 @@
+const { id } = require("../components/parameters");
+
 module.exports = {
   "/ai-document-search/query": {
     post: {
@@ -32,7 +34,7 @@ module.exports = {
                   prompt: { type: "string" },
                   results: {
                     type: "array",
-                    items: { $ref: "#/components/schemas/Document" },
+                    items: { $ref: "#/components/schemas/DocumentWithScore" },
                   },
                   searchRecordId: { type: "string" },
                 },
@@ -40,6 +42,9 @@ module.exports = {
             },
           },
         },
+        400: { $ref: "#/components/responses/BadRequest" },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -56,13 +61,13 @@ module.exports = {
             "application/json": {
               schema: {
                 type: "array",
-                items: {
-                  $ref: "#/components/schemas/AiDocumentSearchHistoryRecord",
-                },
+                items: { $ref: "#/components/schemas/AiDocumentSearchRecord" },
               },
             },
           },
         },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
@@ -72,15 +77,7 @@ module.exports = {
       summary: "Delete a document search record",
       tags: ["AI Document Search"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-          description: "The ID of the search record",
-        },
-      ],
+      parameters: [id],
       responses: {
         200: {
           description: "Confirmation message",
@@ -98,6 +95,10 @@ module.exports = {
             },
           },
         },
+        400: { $ref: "#/components/responses/BadRequest" },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },

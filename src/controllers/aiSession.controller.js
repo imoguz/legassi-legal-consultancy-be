@@ -1,6 +1,7 @@
 "use strict";
 
 const AiSession = require("../models/aiSession.model");
+const AiChat = require("../models/aiChat.model");
 
 const createSession = async (req, res, next) => {
   try {

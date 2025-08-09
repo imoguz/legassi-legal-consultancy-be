@@ -1,84 +1,58 @@
 module.exports = {
   User: {
     type: "object",
-    required: ["firstname", "lastname", "email", "password"],
     properties: {
-      _id: {
-        type: "string",
-        description: "The auto-generated ID of the user",
-        example: "60d21b4667d0d8992e610c85",
-      },
-      firstname: {
-        type: "string",
-        example: "John",
-      },
-      lastname: {
-        type: "string",
-        example: "Doe",
-      },
-      email: {
-        type: "string",
-        format: "email",
-        example: "john@example.com",
-      },
-      password: {
-        type: "string",
-        format: "password",
-        writeOnly: true,
-        description:
-          "8-32 chars, mix of uppercase, lowercase, numbers & special chars",
-      },
+      _id: { type: "string", example: "64fa8e72e2d4e1a1c2345678" },
+      firstname: { type: "string", example: "John" },
+      lastname: { type: "string", example: "Doe" },
+      email: { type: "string", format: "email", example: "john@example.com" },
       profileUrl: {
         type: "string",
-        example: "https://example.com/profiles/john.jpg",
+        example: "https://cdn.example.com/profile.jpg",
       },
       role: {
         type: "string",
         enum: ["user", "admin", "lawyer"],
-        default: "user",
         example: "user",
       },
-      isVerified: {
-        type: "boolean",
-        default: false,
-        example: true,
-      },
-      isActive: {
-        type: "boolean",
-        default: true,
-        example: true,
-      },
-      createdAt: {
+      isVerified: { type: "boolean", example: false },
+      isActive: { type: "boolean", example: true },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+  CreateUserInput: {
+    type: "object",
+    required: ["firstname", "lastname", "email", "password"],
+    properties: {
+      firstname: { type: "string", example: "John" },
+      lastname: { type: "string", example: "Doe" },
+      email: { type: "string", format: "email", example: "john@example.com" },
+      password: { type: "string", example: "StrongP@ssw0rd" },
+      role: {
         type: "string",
-        format: "date-time",
-        example: "2021-06-23T14:24:06.000Z",
-      },
-      updatedAt: {
-        type: "string",
-        format: "date-time",
-        example: "2021-06-23T14:24:06.000Z",
+        enum: ["user", "admin", "lawyer"],
+        example: "user",
       },
     },
   },
-
-  UserListResponse: {
+  UpdateUserInput: {
     type: "object",
     properties: {
-      data: {
-        type: "array",
-        items: { $ref: "#/components/schemas/User" },
+      firstname: { type: "string", example: "John" },
+      lastname: { type: "string", example: "Doe" },
+      email: { type: "string", format: "email", example: "john@example.com" },
+      password: { type: "string", example: "StrongP@ssw0rd" },
+      profileUrl: {
+        type: "string",
+        example: "https://cdn.example.com/profile.jpg",
       },
-      pagination: {
-        type: "object",
-        properties: {
-          total: { type: "integer", example: 100 },
-          page: { type: "integer", example: 1 },
-          limit: { type: "integer", example: 10 },
-          totalPages: { type: "integer", example: 10 },
-          hasNextPage: { type: "boolean", example: true },
-          hasPrevPage: { type: "boolean", example: false },
-        },
+      role: {
+        type: "string",
+        enum: ["user", "admin", "lawyer"],
+        example: "user",
       },
+      isActive: { type: "boolean", example: true },
     },
   },
 };

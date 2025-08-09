@@ -1,33 +1,34 @@
 module.exports = {
-  "/users": {
+  "/matters": {
     post: {
-      summary: "Create a new user",
-      tags: ["Users"],
+      summary: "Create a new matter",
+      tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/CreateUserInput" },
+            schema: { $ref: "#/components/schemas/Matter" },
           },
         },
       },
       responses: {
         201: {
-          description: "User created successfully",
+          description: "Matter created successfully",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/User" },
+              schema: { $ref: "#/components/schemas/Matter" },
             },
           },
         },
         400: { $ref: "#/components/responses/BadRequest" },
         401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
       },
     },
     get: {
-      summary: "Get list of users (admin only)",
-      tags: ["Users"],
+      summary: "List all matters",
+      tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       parameters: [
         { $ref: "#/components/parameters/page" },
@@ -39,7 +40,7 @@ module.exports = {
       ],
       responses: {
         200: {
-          description: "Paginated list of users",
+          description: "Paginated list of matters",
           content: {
             "application/json": {
               schema: {
@@ -49,7 +50,7 @@ module.exports = {
                     properties: {
                       data: {
                         type: "array",
-                        items: { $ref: "#/components/schemas/User" },
+                        items: { $ref: "#/components/schemas/Matter" },
                       },
                     },
                   },
@@ -58,87 +59,60 @@ module.exports = {
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
-        403: { $ref: "#/components/responses/Forbidden" },
       },
     },
   },
 
-  "/users/verify": {
+  "/matters/{id}": {
     get: {
-      summary: "Verify a user account via token",
-      tags: ["Users"],
-      parameters: [
-        {
-          in: "query",
-          name: "token",
-          schema: { type: "string" },
-          required: true,
-          description: "Verification token sent via email",
-        },
-      ],
-      responses: {
-        302: {
-          description: "Redirect to frontend verification result page",
-        },
-        400: { $ref: "#/components/responses/BadRequest" },
-        404: { $ref: "#/components/responses/NotFound" },
-      },
-    },
-  },
-
-  "/users/{id}": {
-    get: {
-      summary: "Get a single user by ID",
-      tags: ["Users"],
+      summary: "Get a single matter",
+      tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         200: {
-          description: "User data",
+          description: "Matter details",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/User" },
+              schema: { $ref: "#/components/schemas/Matter" },
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },
     put: {
-      summary: "Update a user",
-      tags: ["Users"],
+      summary: "Update a matter",
+      tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       requestBody: {
+        required: true,
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/UpdateUserInput" },
+            schema: { $ref: "#/components/schemas/Matter" },
           },
         },
       },
       responses: {
-        202: {
-          description: "User updated successfully",
+        200: {
+          description: "Updated matter",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/User" },
+              schema: { $ref: "#/components/schemas/Matter" },
             },
           },
         },
-        401: { $ref: "#/components/responses/Unauthorized" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },
     delete: {
-      summary: "Delete a user",
-      tags: ["Users"],
+      summary: "Delete a matter",
+      tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
-        204: { description: "User deleted successfully" },
-        401: { $ref: "#/components/responses/Unauthorized" },
+        204: { description: "No Content" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },

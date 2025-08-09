@@ -1,26 +1,39 @@
 module.exports = {
-  AISession: {
+  AiSession: {
     type: "object",
     properties: {
-      _id: { type: "string", example: "665e7b1a271d282d0a5f7851" },
-      user: { type: "string", example: "665e7b19271d282d0a5f784f" },
-      title: { type: "string", example: "Chat with AI on labor law" },
-      isArchived: { type: "boolean", example: false },
+      _id: { type: "string", example: "66a1f4d9c1e9a2b3f8e12345" },
+      user: { type: "string", description: "User ID (ObjectId)" },
+      title: { type: "string", example: "My Legal Chat" },
       lastInteractionAt: {
         type: "string",
         format: "date-time",
-        example: "2024-06-20T12:00:00.000Z",
+        example: "2025-08-09T14:48:00.000Z",
       },
+      isArchived: { type: "boolean", example: false },
       createdAt: {
         type: "string",
         format: "date-time",
-        example: "2024-06-20T11:59:00.000Z",
+        example: "2025-08-09T14:48:00.000Z",
       },
       updatedAt: {
         type: "string",
         format: "date-time",
-        example: "2024-06-20T12:01:00.000Z",
+        example: "2025-08-09T14:50:00.000Z",
       },
+    },
+  },
+  CreateAiSessionRequest: {
+    type: "object",
+    properties: {
+      title: { type: "string", example: "New Chat" },
+    },
+  },
+  UpdateAiSessionRequest: {
+    type: "object",
+    properties: {
+      title: { type: "string", example: "Updated Chat Title" },
+      isArchived: { type: "boolean", example: true },
     },
   },
 };

@@ -1,74 +1,37 @@
 module.exports = {
-  // 400 Bad Request
   BadRequest: {
-    description: "The request contains invalid data",
+    description: "Invalid request data",
     content: {
       "application/json": {
         schema: { $ref: "#/components/schemas/ErrorResponse" },
-        example: {
-          statusCode: 400,
-          message: "Validation error",
-          errors: {
-            email: "Invalid email format",
-            password: "Password must be 8-32 characters",
-          },
-        },
+        example: { statusCode: 400, message: "Validation error" },
       },
     },
   },
-
-  // 401 Unauthorized
   Unauthorized: {
-    description: "Authentication credentials are missing or invalid",
+    description: "Authentication required",
     content: {
       "application/json": {
         schema: { $ref: "#/components/schemas/ErrorResponse" },
-        example: {
-          statusCode: 401,
-          message: "Authentication required",
-        },
+        example: { statusCode: 401, message: "Authentication required" },
       },
     },
   },
-
-  // 403 Forbidden
-  Forbidden: {
-    description: "User doesn't have permission to access this resource",
-    content: {
-      "application/json": {
-        schema: { $ref: "#/components/schemas/ErrorResponse" },
-        example: {
-          statusCode: 403,
-          message: "Insufficient permissions",
-        },
-      },
-    },
-  },
-
-  // 404 Not Found
   NotFound: {
-    description: "The requested resource was not found",
+    description: "Resource not found",
     content: {
       "application/json": {
         schema: { $ref: "#/components/schemas/ErrorResponse" },
-        example: {
-          statusCode: 404,
-          message: "User not found",
-        },
+        example: { statusCode: 404, message: "Not found" },
       },
     },
   },
-
-  // 500 Internal Server Error
   ServerError: {
-    description: "An unexpected server error occurred",
+    description: "Internal server error",
     content: {
       "application/json": {
         schema: { $ref: "#/components/schemas/ErrorResponse" },
-        example: {
-          statusCode: 500,
-          message: "Internal server error",
-        },
+        example: { statusCode: 500, message: "Internal server error" },
       },
     },
   },

@@ -1,77 +1,41 @@
 module.exports = {
   "/ai-chat/{sessionId}/messages": {
     post: {
-      summary: "Send a prompt to the AI chat session",
+      summary: "Create a new AI chat message",
+      description: "Sends a prompt to the AI service and stores the response.",
       tags: ["AI Chat"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "sessionId",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-          description: "The ID of the AI session",
-        },
-      ],
+      parameters: [{ $ref: "#/components/parameters/id" }],
       requestBody: {
         required: true,
         content: {
           "application/json": {
-            schema: {
-              type: "object",
-              required: ["prompt"],
-              properties: {
-                prompt: {
-                  type: "string",
-                  example: "What are the elements of a valid contract?",
-                },
-              },
-            },
+            schema: { $ref: "#/components/schemas/CreateChatMessageRequest" },
           },
         },
       },
       responses: {
         201: {
-          description: "AI response and updated session data",
+          description: "Message created successfully",
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                properties: {
-                  prompt: { type: "string" },
-                  response: { type: "object" },
-                  session: {
-                    type: "object",
-                    properties: {
-                      _id: { type: "string" },
-                      title: { type: "string" },
-                      lastInteractionAt: {
-                        type: "string",
-                        format: "date-time",
-                      },
-                    },
-                  },
-                },
+                $ref: "#/components/schemas/CreateChatMessageResponse",
               },
             },
           },
         },
+        400: { $ref: "#/components/responses/BadRequest" },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
-
     get: {
-      summary: "Get chat messages from a session",
+      summary: "Get all messages in a chat session",
       tags: ["AI Chat"],
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "sessionId",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-          description: "The ID of the AI session",
-        },
-      ],
+      parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         200: {
           description: "List of chat messages",
@@ -84,6 +48,9 @@ module.exports = {
             },
           },
         },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        404: { $ref: "#/components/responses/NotFound" },
+        500: { $ref: "#/components/responses/ServerError" },
       },
     },
   },
