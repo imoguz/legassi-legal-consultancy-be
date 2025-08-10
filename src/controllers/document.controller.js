@@ -19,6 +19,7 @@ module.exports = {
       const doc = await Document.create({
         title: req.body.title,
         description: req.body.description,
+        category: req.body.category,
         fileUrl: result.secure_url,
         cloudinaryId: result.public_id,
         uploadedBy: req.user.id,
