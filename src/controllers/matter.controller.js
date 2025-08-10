@@ -55,7 +55,7 @@ module.exports = {
 
       const data = await req.queryHandler(
         Matter,
-        ["client", "assignedAttorney"],
+        ["client", "assignedAttorney", "relatedDocuments"],
         ["title", "tags", "matterType", "status"], // searchable fields
         baseFilters
       );
@@ -71,7 +71,7 @@ module.exports = {
       const matter = await Matter.findOne({
         _id: req.params.id,
         isDeleted: false,
-      }).populate("client assignedAttorney teamMembers");
+      }).populate("client assignedAttorney teamMembers relatedDocuments");
 
       if (!matter) return res.status(404).send("Matter not found.");
 
@@ -97,18 +97,16 @@ module.exports = {
         _id: req.params.id,
         isDeleted: false,
       });
-
+      console.log(matter);
       if (!matter) return res.status(404).send("Matter not found.");
 
       const isAuthorized =
         req.user.role === "admin" ||
         matter.assignedAttorney.toString() === req.user.id;
-
       if (!isAuthorized)
         return res
           .status(403)
           .send("You are not authorized to update this matter.");
-
       Object.assign(matter, req.body);
       await matter.save();
 
