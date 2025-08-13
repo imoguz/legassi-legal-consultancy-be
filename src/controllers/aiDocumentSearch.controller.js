@@ -1,5 +1,6 @@
 "use strict";
 
+const mongoose = require("mongoose");
 const AiDocumentSearch = require("../models/aiDocumentSearch.model");
 const Document = require("../models/document.model");
 const {
@@ -10,75 +11,94 @@ const searchDocuments = async (req, res, next) => {
   try {
     const { prompt } = req.body;
 
-    if (!prompt?.trim()) {
-      return res.status(400).json({ message: "Prompt is required." });
+    if (typeof prompt !== "string" || !prompt.trim()) {
+      return res
+        .status(400)
+        .json({ message: "Prompt is required and must be a string." });
     }
 
-    const matched = await sendPromptToDocumentAIService(prompt);
+    // Request AI service to fetch matching document IDs
+    const matched = await sendPromptToDocumentAIService(prompt.trim());
 
-    if (!matched?.length) {
-      return res.status(200).send({
-        prompt,
-        results: [],
-      });
+    if (!Array.isArray(matched) || matched.length === 0) {
+      return res.status(200).json({ prompt, results: [] });
     }
 
-    // fetch matched documents from the database
-    const docIds = matched.map((m) => m.id);
-    const documents = await Document.find({ _id: { $in: docIds } });
+    // Collect only valid MongoDB ObjectIds
+    const docIds = matched
+      .map((m) => (mongoose.Types.ObjectId.isValid(m.id) ? m.id : null))
+      .filter(Boolean);
 
-    // combine scores with documents
+    if (docIds.length === 0) {
+      return res.status(200).json({ prompt, results: [] });
+    }
+
+    // Fetch matched documents securely
+    const documents = await Document.find({ _id: { $in: docIds } }).lean();
+
+    // Merge relevance scores with found documents
     const results = matched
       .map((m) => {
         const doc = documents.find((d) => d._id.toString() === m.id);
         if (!doc) return null;
         return {
-          ...doc.toObject(),
-          relevanceScore: m.weight,
+          ...doc,
+          relevanceScore: typeof m.weight === "number" ? m.weight : 0,
         };
       })
       .filter(Boolean);
 
-    // save search record
+    // Save search history securely
     const searchRecord = await AiDocumentSearch.create({
-      user: req.user.id,
-      prompt,
-      matchedDocuments: matched.map((m) => ({
-        document: m.id,
-        score: m.weight,
-      })),
+      user: req.user?.id || null,
+      prompt: prompt.trim(),
+      matchedDocuments: matched
+        .filter((m) => mongoose.Types.ObjectId.isValid(m.id))
+        .map((m) => ({
+          document: m.id,
+          score: typeof m.weight === "number" ? m.weight : 0,
+        })),
     });
 
-    res.status(200).send({
+    return res.status(200).json({
       prompt,
       results,
       searchRecordId: searchRecord._id,
     });
   } catch (err) {
-    next(err);
+    console.error("Error in searchDocuments:", err);
+    return next(err);
   }
 };
 
-// user search history
 const getUserSearchHistory = async (req, res, next) => {
   try {
-    const history = await AiDocumentSearch.find({ user: req.user.id })
+    const userId = req.user?.id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID." });
+    }
+
+    const history = await AiDocumentSearch.find({ user: userId })
       .sort({ createdAt: -1 })
-      .populate("matchedDocuments.document");
+      .populate("matchedDocuments.document")
+      .lean();
 
     const formatted = history.map((record) => ({
       _id: record._id,
       prompt: record.prompt,
       createdAt: record.createdAt,
-      matchedDocuments: record.matchedDocuments.map((m) => ({
-        ...m.document.toObject(),
-        relevanceScore: m.score,
-      })),
+      matchedDocuments: (record.matchedDocuments || [])
+        .filter((m) => m.document)
+        .map((m) => ({
+          ...m.document,
+          relevanceScore: typeof m.score === "number" ? m.score : 0,
+        })),
     }));
 
-    res.status(200).send(formatted);
+    return res.status(200).json(formatted);
   } catch (err) {
-    next(err);
+    console.error("Error in getUserSearchHistory:", err);
+    return next(err);
   }
 };
 
@@ -86,24 +106,27 @@ const deleteUserSearchRecord = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!id) {
-      return res.status(400).json({ message: "Search record ID is required." });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid search record ID." });
     }
 
     const record = await AiDocumentSearch.findOne({
       _id: id,
-      user: req.user.id,
+      user: req.user?.id,
     });
-
     if (!record) {
-      return res.status(404).json({ message: "Search record not found." });
+      return res
+        .status(404)
+        .json({ message: "Search record not found or not authorized." });
     }
 
     await record.deleteOne();
-
-    res.status(200).json({ message: "Search record deleted successfully." });
+    return res
+      .status(200)
+      .json({ message: "Search record deleted successfully." });
   } catch (err) {
-    next(err);
+    console.error("Error in deleteUserSearchRecord:", err);
+    return next(err);
   }
 };
 
