@@ -2,16 +2,6 @@
 
 const Matter = require("../models/matter.model");
 
-async function generateMatterNumber() {
-  const year = new Date().getFullYear();
-  const prefix = `MAT-${year}-`;
-  const count = await Matter.countDocuments({
-    matterNumber: { $regex: `^${prefix}` },
-  });
-  const padded = String(count + 1).padStart(4, "0");
-  return `${prefix}${padded}`;
-}
-
 module.exports = {
   create: async (req, res, next) => {
     try {
@@ -22,28 +12,21 @@ module.exports = {
         description,
         tags,
         matterNumber,
-        teamMembers = [],
+        teamMembers,
         status,
         feeType,
         importantDates,
         court,
         opposingParty,
-        assignedAttorney,
       } = req.body;
 
-      const finalMatterNumber = await generateMatterNumber();
-      const finalAssignedAttorney =
-        req.user.role === "admin" && assignedAttorney
-          ? assignedAttorney
-          : req.user.id;
-
-      const newMatter = await Matter.create({
+      const data = await Matter.create({
         title,
         client,
-        assignedAttorney: finalAssignedAttorney,
+        assignedAttorney: req.user.id,
         matterType,
         description,
-        matterNumber: finalMatterNumber,
+        matterNumber,
         status,
         court,
         opposingParty,
@@ -51,13 +34,13 @@ module.exports = {
         teamMembers,
         tags,
         importantDates: {
-          openingDate: importantDates?.openingDate || new Date(),
           deadline: importantDates?.deadline,
+          openingDate: importantDates?.openingDate || new Date(),
         },
         createdBy: req.user.id,
       });
 
-      res.status(201).json(newMatter);
+      res.status(201).send(data);
     } catch (err) {
       next(err);
     }
@@ -68,22 +51,16 @@ module.exports = {
       const baseFilters =
         req.user.role === "admin"
           ? { isDeleted: false }
-          : {
-              isDeleted: false,
-              $or: [
-                { assignedAttorney: req.user.id },
-                { teamMembers: req.user.id },
-              ],
-            };
+          : { assignedAttorney: req.user.id, isDeleted: false };
 
-      const matters = await req.queryHandler(
+      const data = await req.queryHandler(
         Matter,
-        ["client", "assignedAttorney", "relatedDocuments", "teamMembers.user"], // populate fields
+        ["client", "assignedAttorney", "relatedDocuments"],
         ["title", "tags", "matterType", "status"], // searchable fields
         baseFilters
       );
 
-      res.status(200).json(matters);
+      res.status(200).send(data);
     } catch (err) {
       next(err);
     }
@@ -94,7 +71,7 @@ module.exports = {
       const matter = await Matter.findOne({
         _id: req.params.id,
         isDeleted: false,
-      }).populate("client assignedAttorney teamMembers.user relatedDocuments");
+      }).populate("client assignedAttorney teamMembers relatedDocuments");
 
       if (!matter) return res.status(404).send("Matter not found.");
 
@@ -106,9 +83,9 @@ module.exports = {
       if (!isAuthorized)
         return res
           .status(403)
-          .send("You are not authorized to view this matter.");
+          .send("You are not authorized to access this matter.");
 
-      res.status(200).json(matter);
+      res.status(200).send(matter);
     } catch (err) {
       next(err);
     }
@@ -120,22 +97,20 @@ module.exports = {
         _id: req.params.id,
         isDeleted: false,
       });
-
+      console.log(matter);
       if (!matter) return res.status(404).send("Matter not found.");
 
       const isAuthorized =
         req.user.role === "admin" ||
         matter.assignedAttorney.toString() === req.user.id;
-
       if (!isAuthorized)
         return res
           .status(403)
           .send("You are not authorized to update this matter.");
-
       Object.assign(matter, req.body);
       await matter.save();
 
-      res.status(200).json(matter);
+      res.status(200).send(matter);
     } catch (err) {
       next(err);
     }

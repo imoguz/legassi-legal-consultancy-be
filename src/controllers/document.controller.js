@@ -22,7 +22,9 @@ module.exports = {
         category: req.body.category,
         fileUrl: result.secure_url,
         cloudinaryId: result.public_id,
+        documentType: req.body.documentType || "public",
         uploadedBy: req.user.id,
+        matterId: req.body.matterId || null,
       });
 
       res.status(201).send(doc);
@@ -57,10 +59,13 @@ module.exports = {
 
   getDocuments: async (req, res, next) => {
     try {
+      const baseFilters = { documentType: "public" };
+
       const result = await req.queryHandler(
         Document,
         { path: "uploadedBy", select: "firstname lastname" },
-        ["title", "description", "category"] // search fields
+        ["title", "description", "category"], // search fields
+        baseFilters
       );
 
       const mapped = result.data.map((doc) => ({
@@ -69,6 +74,7 @@ module.exports = {
         description: doc.description,
         category: doc.category,
         fileUrl: doc.fileUrl,
+        documentType: doc.documentType,
         createdAt: doc.createdAt,
         uploadedBy: doc.uploadedBy
           ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
@@ -105,6 +111,7 @@ module.exports = {
 
       doc.title = req.body.title || doc.title;
       doc.description = req.body.description || doc.description;
+      doc.category = req.body.category || doc.category;
 
       const updated = await doc.save();
       res.status(200).send(updated);

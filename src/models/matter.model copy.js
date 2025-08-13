@@ -1,79 +1,5 @@
 const { Schema, model, Types } = require("mongoose");
 
-const teamMemberSchema = new Schema(
-  {
-    user: {
-      type: Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ["co-counsel", "paralegal", "intern", "assistant"],
-      required: true,
-    },
-    addedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  { _id: false }
-);
-
-const opposingPartySchema = new Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    representative: {
-      type: String,
-      trim: true,
-    },
-    phone: {
-      type: String,
-      trim: true,
-    },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-    },
-  },
-  { _id: false }
-);
-
-const auditLogSchema = new Schema(
-  {
-    action: {
-      type: String,
-      enum: [
-        "created",
-        "updated",
-        "status-changed",
-        "document-added",
-        "document-removed",
-        "assigned-changed",
-      ],
-      required: true,
-    },
-    user: {
-      type: Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
-    details: {
-      type: Schema.Types.Mixed,
-    },
-  },
-  { _id: false }
-);
-
 const matterSchema = new Schema(
   {
     title: {
@@ -100,7 +26,12 @@ const matterSchema = new Schema(
       ref: "User",
       required: true,
     },
-    teamMembers: [teamMemberSchema],
+    teamMembers: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+      },
+    ],
     matterType: {
       type: String,
       enum: ["lawsuit", "contract", "consultation", "other"],
@@ -137,19 +68,14 @@ const matterSchema = new Schema(
       type: String,
       trim: true,
     },
-    opposingParty: opposingPartySchema,
+    opposingParty: {
+      type: String,
+      trim: true,
+    },
     feeType: {
       type: String,
       enum: ["fixed", "hourly"],
     },
-    feeAmount: {
-      type: Number,
-    },
-    currency: {
-      type: String,
-      default: "USD",
-    },
-    auditLogs: [auditLogSchema],
     isDeleted: {
       type: Boolean,
       default: false,
