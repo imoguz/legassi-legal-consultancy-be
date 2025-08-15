@@ -21,6 +21,8 @@ module.exports = {
         description: req.body.description,
         category: req.body.category,
         fileUrl: result.secure_url,
+        fileSize: req.body.fileSize,
+        fileType: req.body.fileType,
         cloudinaryId: result.public_id,
         documentType: req.body.documentType || "public",
         uploadedBy: req.user.id,
@@ -34,19 +36,22 @@ module.exports = {
   },
 
   getDocument: async (req, res) => {
+    console.log("start");
     try {
       const doc = await Document.findById(req.params.id).populate(
         "uploadedBy",
         "firstname lastname"
       );
       if (!doc) throw new Error("Document not found");
-
+      console.log(doc);
       res.status(200).send({
         _id: doc._id,
         title: doc.title,
         description: doc.description,
         category: doc.category,
         fileUrl: doc.fileUrl,
+        fileSize: doc.fileSize,
+        fileType: doc.fileType,
         createdAt: doc.createdAt,
         uploadedBy: doc.uploadedBy
           ? `${doc.uploadedBy.firstname} ${doc.uploadedBy.lastname}`
@@ -74,6 +79,8 @@ module.exports = {
         description: doc.description,
         category: doc.category,
         fileUrl: doc.fileUrl,
+        fileSize: doc.fileSize,
+        fileType: doc.fileType,
         documentType: doc.documentType,
         createdAt: doc.createdAt,
         uploadedBy: doc.uploadedBy

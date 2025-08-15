@@ -50,6 +50,12 @@ const documentSchema = new Schema(
       type: String,
       required: true,
     },
+    fileSize: {
+      type: String,
+    },
+    fileType: {
+      type: String,
+    },
     cloudinaryId: {
       type: String,
       required: true,
