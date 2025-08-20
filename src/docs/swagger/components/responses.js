@@ -17,6 +17,19 @@ module.exports = {
       },
     },
   },
+  Forbidden: {
+    description: "Insufficient permissions",
+    content: {
+      "application/json": {
+        schema: { $ref: "#/components/schemas/ErrorResponse" },
+        example: {
+          statusCode: 403,
+          message:
+            "Forbidden - You don't have permission to access this matter",
+        },
+      },
+    },
+  },
   NotFound: {
     description: "Resource not found",
     content: {

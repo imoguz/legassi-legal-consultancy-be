@@ -78,11 +78,41 @@ module.exports = {
         },
       ],
       responses: {
-        302: {
-          description: "Redirect to frontend verification result page",
-        },
+        302: { description: "Redirect to frontend verification result page" },
         400: { $ref: "#/components/responses/BadRequest" },
         404: { $ref: "#/components/responses/NotFound" },
+      },
+    },
+  },
+
+  "/users/staff": {
+    get: {
+      summary: "Get all active staff users with assignable positions",
+      tags: ["Users"],
+      security: [{ bearerAuth: [] }],
+      responses: {
+        200: {
+          description: "List of staff users",
+          content: {
+            "application/json": {
+              schema: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    _id: { type: "string" },
+                    firstname: { type: "string" },
+                    lastname: { type: "string" },
+                    position: { type: "string" },
+                    profileUrl: { type: "string", nullable: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
       },
     },
   },
@@ -103,6 +133,7 @@ module.exports = {
           },
         },
         401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },
@@ -128,17 +159,34 @@ module.exports = {
           },
         },
         401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },
     delete: {
-      summary: "Delete a user",
+      summary: "Soft delete a user (mark as deleted)",
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
-        204: { description: "User deleted successfully" },
+        204: { description: "User marked as deleted" },
         401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
+        404: { $ref: "#/components/responses/NotFound" },
+      },
+    },
+  },
+
+  "/users/purge/{id}": {
+    delete: {
+      summary: "Permanently delete a user (admin only)",
+      tags: ["Users"],
+      security: [{ bearerAuth: [] }],
+      parameters: [{ $ref: "#/components/parameters/id" }],
+      responses: {
+        204: { description: "User permanently deleted" },
+        401: { $ref: "#/components/responses/Unauthorized" },
+        403: { $ref: "#/components/responses/Forbidden" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },

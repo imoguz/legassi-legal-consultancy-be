@@ -39,12 +39,26 @@ const userSchema = new Schema(
     profileUrl: {
       type: String,
       trim: true,
+      default: null,
     },
 
     role: {
       type: String,
-      enum: ["user", "admin", "lawyer"],
-      default: "user",
+      enum: ["admin", "manager", "staff", "client"],
+      default: "client",
+    },
+
+    position: {
+      type: String,
+      enum: ["lawyer", "assistant", "paralegal", "intern"],
+      default: null,
+      validate: {
+        validator: function (value) {
+          if (this.role === "client" && value !== null) return false;
+          return true;
+        },
+        message: "Clients cannot have a position",
+      },
     },
 
     isVerified: {
@@ -55,6 +69,11 @@ const userSchema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {

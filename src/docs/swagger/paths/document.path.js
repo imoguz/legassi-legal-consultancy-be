@@ -1,7 +1,7 @@
 module.exports = {
   "/documents": {
     post: {
-      summary: "Upload a document",
+      summary: "Upload a new document",
       tags: ["Documents"],
       security: [{ bearerAuth: [] }],
       requestBody: {
@@ -65,13 +65,13 @@ module.exports = {
 
   "/documents/{id}": {
     get: {
-      summary: "Get a document by ID",
+      summary: "Get document by ID",
       tags: ["Documents"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         200: {
-          description: "Document found",
+          description: "Document retrieved",
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/Document" },
@@ -83,7 +83,7 @@ module.exports = {
       },
     },
     put: {
-      summary: "Update a document",
+      summary: "Update an existing document",
       tags: ["Documents"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
@@ -97,7 +97,7 @@ module.exports = {
       },
       responses: {
         200: {
-          description: "Document updated",
+          description: "Document updated successfully",
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/Document" },
@@ -109,12 +109,25 @@ module.exports = {
       },
     },
     delete: {
-      summary: "Delete a document",
+      summary: "Soft delete a document",
       tags: ["Documents"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
-        204: { description: "Document deleted successfully" },
+        204: { description: "Document marked as deleted" },
+        404: { $ref: "#/components/responses/NotFound" },
+      },
+    },
+  },
+
+  "/documents/purge/{id}": {
+    delete: {
+      summary: "Permanently delete a document",
+      tags: ["Documents"],
+      security: [{ bearerAuth: [] }],
+      parameters: [{ $ref: "#/components/parameters/id" }],
+      responses: {
+        204: { description: "Document purged successfully" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },

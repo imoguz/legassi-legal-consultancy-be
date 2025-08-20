@@ -10,7 +10,14 @@ module.exports = {
       assignedAttorney: { type: "string", description: "User ID" },
       teamMembers: {
         type: "array",
-        items: { type: "string", description: "User ID" },
+        items: {
+          type: "object",
+          properties: {
+            member: { type: "string", description: "User ID" },
+            assignedBy: { type: "string", description: "User ID" },
+            addedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
       matterType: {
         type: "string",
@@ -35,8 +42,18 @@ module.exports = {
       },
       notes: { type: "string" },
       court: { type: "string" },
-      opposingParty: { type: "string" },
+      opposingParty: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          representative: { type: "string" },
+          phone: { type: "string" },
+          email: { type: "string" },
+        },
+      },
       feeType: { type: "string", enum: ["fixed", "hourly"] },
+      feeAmount: { type: "number" },
+      currency: { type: "string", default: "USD" },
       isDeleted: { type: "boolean" },
       createdBy: { type: "string", description: "User ID" },
       createdAt: { type: "string", format: "date-time" },
@@ -49,7 +66,13 @@ module.exports = {
       matterNumber: "MAT-2025-001",
       client: "66a1b2c3d4e5f67890120001",
       assignedAttorney: "66a1b2c3d4e5f67890120002",
-      teamMembers: ["66a1b2c3d4e5f67890120003"],
+      teamMembers: [
+        {
+          member: "66a1b2c3d4e5f67890120003",
+          assignedBy: "66a1b2c3d4e5f67890120005",
+          addedAt: "2025-08-01T00:00:00.000Z",
+        },
+      ],
       matterType: "lawsuit",
       status: "open",
       relatedDocuments: ["66a1b2c3d4e5f67890120004"],
@@ -60,8 +83,15 @@ module.exports = {
       },
       notes: "Need to review evidence",
       court: "Istanbul Commercial Court",
-      opposingParty: "John Smith",
+      opposingParty: {
+        name: "John Smith",
+        representative: "Jane Doe",
+        phone: "+90 555 111 2233",
+        email: "john.smith@example.com",
+      },
       feeType: "hourly",
+      feeAmount: 200,
+      currency: "USD",
       isDeleted: false,
       createdBy: "66a1b2c3d4e5f67890120005",
       createdAt: "2025-08-08T12:00:00.000Z",

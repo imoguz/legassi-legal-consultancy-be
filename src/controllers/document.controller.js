@@ -5,9 +5,10 @@ const {
   uploadToCloudinaryBuffer,
   deleteFromCloudinary,
 } = require("../helpers/cloudinary");
+const { createAuditLog } = require("../helpers/audit.helper");
 
 module.exports = {
-  uploadDocument: async (req, res) => {
+  create: async (req, res) => {
     try {
       if (!req.file) throw new Error("No file uploaded");
 
@@ -29,21 +30,40 @@ module.exports = {
         matterId: req.body.matterId || null,
       });
 
+      // Audit log
+      await createAuditLog({
+        collectionName: "documents",
+        documentId: doc._id,
+        changedBy: req.user.id,
+        changedFields: [
+          "title",
+          "description",
+          "category",
+          "fileUrl",
+          "fileSize",
+          "fileType",
+          "documentType",
+          "uploadedBy",
+          "matterId",
+        ],
+        operation: "create",
+        previousValues: {},
+        newValues: doc.toObject(),
+      });
+
       res.status(201).send(doc);
     } catch (err) {
       res.status(500).send({ message: err.message });
     }
   },
 
-  getDocument: async (req, res) => {
-    console.log("start");
+  readOne: async (req, res) => {
     try {
       const doc = await Document.findById(req.params.id).populate(
         "uploadedBy",
         "firstname lastname"
       );
       if (!doc) throw new Error("Document not found");
-      console.log(doc);
       res.status(200).send({
         _id: doc._id,
         title: doc.title,
@@ -62,7 +82,7 @@ module.exports = {
     }
   },
 
-  getDocuments: async (req, res, next) => {
+  readMany: async (req, res, next) => {
     try {
       const baseFilters = { documentType: "public" };
 
@@ -97,13 +117,73 @@ module.exports = {
     }
   },
 
-  deleteDocument: async (req, res) => {
+  update: async (req, res) => {
     try {
-      const doc = await Document.findById(req.params.id);
-      if (!doc) throw new Error("Document not found");
+      const document = await Document.findById(req.params.id);
 
-      await deleteFromCloudinary(doc.cloudinaryId);
-      await doc.deleteOne();
+      if (!document) return res.status(404).send("Document not found.");
+
+      const changedFields = Object.keys(req.body).filter(
+        (key) => JSON.stringify(document[key]) !== JSON.stringify(req.body[key])
+      );
+
+      const previousValues = {};
+      const newValues = {};
+
+      changedFields.forEach((field) => {
+        previousValues[field] = document[field];
+        newValues[field] = req.body[field];
+      });
+
+      if (changedFields.length === 0) {
+        return res
+          .status(200)
+          .json({ message: "No valid changes provided for update." });
+      }
+
+      Object.assign(document, req.body);
+      await document.save();
+
+      // Audit log
+      await createAuditLog({
+        collectionName: "documents",
+        documentId: document._id,
+        changedBy: req.user.id,
+        changedFields,
+        operation: "update",
+        previousValues,
+        newValues,
+      });
+
+      res.status(200).send(doc);
+    } catch (err) {
+      res.status(500).send({ message: err.message });
+    }
+  },
+
+  _delete: async (req, res) => {
+    try {
+      const document = await Document.findOne({
+        _id: req.params.id,
+        isDeleted: false,
+      });
+
+      if (!document) return res.status(404).send("Document not found.");
+
+      const previousValues = { isDeleted: document.isDeleted };
+      document.isDeleted = true;
+      await document.save();
+
+      // Audit log
+      await createAuditLog({
+        collectionName: "documents",
+        documentId: document._id,
+        changedBy: req.user.id,
+        changedFields: ["isDeleted"],
+        operation: "delete",
+        previousValues,
+        newValues: { isDeleted: true },
+      });
 
       res.status(204).send();
     } catch (err) {
@@ -111,19 +191,29 @@ module.exports = {
     }
   },
 
-  updateDocument: async (req, res) => {
+  purge: async (req, res, next) => {
     try {
-      const doc = await Document.findById(req.params.id);
-      if (!doc) throw new Error("Document not found");
+      const document = await Document.findById(req.params.id);
+      if (!document) return res.status(404).send("Document not found.");
 
-      doc.title = req.body.title || doc.title;
-      doc.description = req.body.description || doc.description;
-      doc.category = req.body.category || doc.category;
+      // Audit log
+      await createAuditLog({
+        collectionName: "documents",
+        documentId: document._id,
+        changedBy: req.user.id,
+        changedFields: [],
+        operation: "purge",
+        previousValues: document.toObject(),
+        newValues: {},
+      });
 
-      const updated = await doc.save();
-      res.status(200).send(updated);
+      await deleteFromCloudinary(document.cloudinaryId);
+
+      await Document.deleteOne({ _id: req.params.id });
+
+      res.status(204).send();
     } catch (err) {
-      res.status(500).send({ message: err.message });
+      next(err);
     }
   },
 };

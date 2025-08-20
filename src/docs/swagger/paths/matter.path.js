@@ -107,12 +107,25 @@ module.exports = {
       },
     },
     delete: {
-      summary: "Delete a matter",
+      summary: "Soft delete a matter (mark as deleted)",
       tags: ["Matters"],
       security: [{ bearerAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/id" }],
       responses: {
         204: { description: "No Content" },
+        404: { $ref: "#/components/responses/NotFound" },
+      },
+    },
+  },
+  "/matters/purge/{id}": {
+    delete: {
+      summary: "Permanently delete a matter (purge)",
+      tags: ["Matters"],
+      security: [{ bearerAuth: [] }],
+      parameters: [{ $ref: "#/components/parameters/id" }],
+      responses: {
+        204: { description: "No Content" },
+        403: { $ref: "#/components/responses/Forbidden" },
         404: { $ref: "#/components/responses/NotFound" },
       },
     },

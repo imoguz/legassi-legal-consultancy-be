@@ -1,31 +1,30 @@
 const router = require("express").Router();
 const uploadSinglePDF = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
-const requireAuth = require("../middlewares/requireAuth");
-const queryHandler = require("../middlewares/queryHandler");
+const requirePermission = require("../middlewares/requirePermission");
 
 const {
-  uploadDocument,
-  getDocument,
-  getDocuments,
-  deleteDocument,
-  updateDocument,
+  create,
+  readMany,
+  readOne,
+  update,
+  _delete,
+  purge,
 } = require("../controllers/document.controller");
 
-router.post(
-  "/",
-  jwtVerification,
-  requireAuth(["admin"]),
-  uploadSinglePDF,
-  uploadDocument
-);
+// JWT Verification for all routes
+router.use(jwtVerification);
 
-router.get("/", jwtVerification, queryHandler, getDocuments);
+router.post("/", requirePermission("CREATE_DOCUMENT"), uploadSinglePDF, create);
+
+router.get("/", requirePermission("LIST_DOCUMENTS"), readMany);
 
 router
   .route("/:id")
-  .get(jwtVerification, getDocument)
-  .delete(jwtVerification, requireAuth(["admin"]), deleteDocument)
-  .put(jwtVerification, requireAuth(["admin"]), updateDocument);
+  .get(requirePermission("VIEW_DOCUMENT"), readOne)
+  .put(requirePermission("UPDATE_DOCUMENT"), update)
+  .delete(requirePermission("DELETE_DOCUMENT"), _delete);
+
+router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);
 
 module.exports = router;

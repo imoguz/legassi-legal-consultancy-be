@@ -1,16 +1,8 @@
 "use strict";
 
+const { createAuditLog } = require("../helpers/audit.helper");
+const generateMatterNumber = require("../helpers/generateMatterNumber");
 const Matter = require("../models/matter.model");
-
-async function generateMatterNumber() {
-  const year = new Date().getFullYear();
-  const prefix = `MAT-${year}-`;
-  const count = await Matter.countDocuments({
-    matterNumber: { $regex: `^${prefix}` },
-  });
-  const padded = String(count + 1).padStart(4, "0");
-  return `${prefix}${padded}`;
-}
 
 module.exports = {
   create: async (req, res, next) => {
@@ -21,7 +13,6 @@ module.exports = {
         matterType,
         description,
         tags,
-        matterNumber,
         teamMembers = [],
         status,
         feeType,
@@ -57,6 +48,30 @@ module.exports = {
         createdBy: req.user.id,
       });
 
+      // Audit log
+      await createAuditLog({
+        collectionName: "matters",
+        documentId: newMatter._id,
+        changedBy: req.user.id,
+        changedFields: [
+          "title",
+          "client",
+          "assignedAttorney",
+          "matterType",
+          "description",
+          "status",
+          "court",
+          "opposingParty",
+          "feeType",
+          "teamMembers",
+          "tags",
+          "importantDates",
+        ],
+        operation: "create",
+        previousValues: {},
+        newValues: newMatter.toObject(),
+      });
+
       res.status(201).json(newMatter);
     } catch (err) {
       next(err);
@@ -65,20 +80,38 @@ module.exports = {
 
   readMany: async (req, res, next) => {
     try {
-      const baseFilters =
-        req.user.role === "admin"
-          ? { isDeleted: false }
-          : {
-              isDeleted: false,
-              $or: [
-                { assignedAttorney: req.user.id },
-                { teamMembers: req.user.id },
-              ],
-            };
+      let baseFilters;
+
+      if (req.user.role === "admin" || req.user.role === "manager") {
+        baseFilters = { isDeleted: false };
+      } else if (req.user.role === "staff") {
+        baseFilters = {
+          isDeleted: false,
+          $or: [
+            { assignedAttorney: req.user.id },
+            { "teamMembers.member": req.user.id },
+          ],
+        };
+      } else {
+        baseFilters = { _id: null };
+      }
 
       const matters = await req.queryHandler(
         Matter,
-        ["client", "assignedAttorney", "relatedDocuments", "teamMembers.user"], // populate fields
+        [
+          { path: "client" },
+          {
+            path: "assignedAttorney",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "relatedDocuments",
+          },
+          {
+            path: "teamMembers.member",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+        ], // populate fields
         ["title", "tags", "matterType", "status"], // searchable fields
         baseFilters
       );
@@ -94,14 +127,27 @@ module.exports = {
       const matter = await Matter.findOne({
         _id: req.params.id,
         isDeleted: false,
-      }).populate("client assignedAttorney teamMembers.user relatedDocuments");
+      })
+        .populate("client")
+        .populate({
+          path: "assignedAttorney",
+          select: "_id firstname lastname email position profileUrl",
+        })
+        .populate("relatedDocuments")
+        .populate({
+          path: "teamMembers.member",
+          select: "_id firstname lastname email position profileUrl",
+        });
 
       if (!matter) return res.status(404).send("Matter not found.");
 
       const isAuthorized =
         req.user.role === "admin" ||
-        matter.assignedAttorney.toString() === req.user.id ||
-        matter.teamMembers.some((id) => id.toString() === req.user.id);
+        req.user.role === "manager" ||
+        matter.assignedAttorney._id.toString() === req.user.id ||
+        matter.teamMembers.some(
+          (tm) => tm.member && tm.member._id.toString() === req.user.id
+        );
 
       if (!isAuthorized)
         return res
@@ -116,10 +162,7 @@ module.exports = {
 
   update: async (req, res, next) => {
     try {
-      const matter = await Matter.findOne({
-        _id: req.params.id,
-        isDeleted: false,
-      });
+      const matter = await Matter.findById(req.params.id);
 
       if (!matter) return res.status(404).send("Matter not found.");
 
@@ -132,8 +175,36 @@ module.exports = {
           .status(403)
           .send("You are not authorized to update this matter.");
 
+      const changedFields = Object.keys(req.body).filter(
+        (key) => JSON.stringify(matter[key]) !== JSON.stringify(req.body[key])
+      );
+
+      const previousValues = {};
+      const newValues = {};
+      changedFields.forEach((field) => {
+        previousValues[field] = matter[field];
+        newValues[field] = req.body[field];
+      });
+
+      if (changedFields.length === 0) {
+        return res
+          .status(200)
+          .json({ message: "No valid changes provided for update." });
+      }
+
       Object.assign(matter, req.body);
       await matter.save();
+
+      // Audit log
+      await createAuditLog({
+        collectionName: "matters",
+        documentId: matter._id,
+        changedBy: req.user.id,
+        changedFields,
+        operation: "update",
+        previousValues,
+        newValues,
+      });
 
       res.status(200).json(matter);
     } catch (err) {
@@ -152,15 +223,57 @@ module.exports = {
 
       const isAuthorized =
         req.user.role === "admin" ||
-        matter.assignedAttorney.toString() === req.user.id;
+        req.user.role === "manager" ||
+        (req.user.role === "staff" &&
+          matter.assignedAttorney.toString() === req.user.id);
 
       if (!isAuthorized)
         return res
           .status(403)
           .send("You are not authorized to delete this matter.");
 
+      const previousValues = { isDeleted: matter.isDeleted };
       matter.isDeleted = true;
       await matter.save();
+
+      // Audit log
+      await createAuditLog({
+        collectionName: "matters",
+        documentId: matter._id,
+        changedBy: req.user.id,
+        changedFields: ["isDeleted"],
+        operation: "delete",
+        previousValues,
+        newValues: { isDeleted: true },
+      });
+
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  purge: async (req, res, next) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).send("Only admins can purge matters.");
+      }
+
+      const matter = await Matter.findById(req.params.id);
+      if (!matter) return res.status(404).send("Matter not found.");
+
+      // Audit log
+      await createAuditLog({
+        collectionName: "matters",
+        documentId: matter._id,
+        changedBy: req.user.id,
+        changedFields: [],
+        operation: "purge",
+        previousValues: matter.toObject(),
+        newValues: {},
+      });
+
+      await Matter.deleteOne({ _id: req.params.id });
 
       res.status(204).send();
     } catch (err) {

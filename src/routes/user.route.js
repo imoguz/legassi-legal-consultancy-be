@@ -2,27 +2,41 @@
 
 const router = require("express").Router();
 const jwtVerification = require("../middlewares/jwt.verification");
-const requireAuth = require("../middlewares/requireAuth");
+const requirePermission = require("../middlewares/requirePermission");
 const {
   create,
   verify,
   readOne,
   readMany,
+  readAllStaff,
   update,
   _delete,
+  purge,
 } = require("../controllers/user.controller");
 
-router
-  .route("/")
-  .post(create)
-  .get(jwtVerification, requireAuth(["admin"]), readMany);
+router.post("/", create);
+router.get("/", jwtVerification, requirePermission("LIST_USERS"), readMany);
 
 router.get("/verify", verify);
 
+router.get(
+  "/staff",
+  jwtVerification,
+  requirePermission("LIST_STAFF"),
+  readAllStaff
+);
+
 router
   .route("/:id")
-  .get(jwtVerification, requireAuth(), readOne)
-  .put(jwtVerification, requireAuth(), update)
-  .delete(jwtVerification, requireAuth(["admin"]), _delete);
+  .get(jwtVerification, requirePermission("VIEW_USER"), readOne)
+  .put(jwtVerification, requirePermission("UPDATE_USER"), update)
+  .delete(jwtVerification, requirePermission("DELETE_USER"), _delete);
+
+router.delete(
+  "/purge/:id",
+  jwtVerification,
+  requirePermission("PURGE_RECORD"),
+  purge
+);
 
 module.exports = router;

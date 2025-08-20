@@ -22,6 +22,8 @@ const contactPaths = require("./paths/contact.path");
 const contactSchemas = require("./schemas/contact.schema");
 const documentPaths = require("./paths/document.path");
 const documentSchemas = require("./schemas/document.schema");
+const employeePaths = require("./paths/employee.path");
+const employeeSchemas = require("./schemas/employee.schema");
 
 module.exports = {
   openapi: "3.0.0",
@@ -52,6 +54,7 @@ module.exports = {
     { name: "Matters", description: "Matter/Case management operations" },
     { name: "Contacts", description: "Contact management operations" },
     { name: "Documents", description: "Document management operations" },
+    { name: "Employees", description: "Employee management operations" },
   ],
   paths: {
     ...authPaths,
@@ -62,6 +65,7 @@ module.exports = {
     ...aiSessionPaths,
     ...contactPaths,
     ...documentPaths,
+    ...employeePaths,
   },
   components: {
     securitySchemes: {
@@ -80,6 +84,7 @@ module.exports = {
       ...aiSessionSchemas,
       ...contactSchemas,
       ...documentSchemas,
+      ...employeeSchemas,
     },
   },
   security: [{ bearerAuth: [] }],

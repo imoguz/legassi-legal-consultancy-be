@@ -69,6 +69,10 @@ const documentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Matter",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
