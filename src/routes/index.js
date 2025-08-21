@@ -12,5 +12,6 @@ router.use("/ai-session", require("./aiSession.route"));
 router.use("/matters", require("./matter.route"));
 router.use("/contacts", require("./contact.route"));
 router.use("/employee", require("./employee.route"));
+router.use("/tasks", require("./task.route"));
 
 module.exports = router;

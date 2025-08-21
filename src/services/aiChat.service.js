@@ -3,6 +3,7 @@
 const axios = require("axios");
 
 async function sendPromptToAIService(prompt) {
+  // try {
   //   const response = await axios.post(
   //     process.env.AI_SERVICE_URL,
   //     { prompt },
@@ -12,7 +13,12 @@ async function sendPromptToAIService(prompt) {
   //       },
   //     }
   //   );
+
   //   return response.data;
+  // } catch (err) {
+  //   console.error("AI Service Error:", err.message);
+  //   return { text: "AI service not available", weight: 0 };
+  // }
 
   const mockResponses = [
     {
@@ -43,7 +49,7 @@ async function sendPromptToAIService(prompt) {
   }
 
   return getRandomMockResponse();
-  // return response;
+  return response;
 }
 
 module.exports = { sendPromptToAIService };
