@@ -1,13 +1,7 @@
 "use strict";
 
 async function sendPromptToDocumentAIService(prompt) {
-  const mockMatched = [
-    { id: "689b3fae4105d80b5db84ebb", weight: 0.76 },
-    { id: "689b3cc177cdfbe50a579d1f", weight: 0.68 },
-    { id: "689b3bf69c593b2ebdb85f9d", weight: 0.93 },
-    { id: "689b3b5d9c593b2ebdb85f9b", weight: 0.55 },
-    { id: "689b37d0f468d5111f1bc056", weight: 0.82 },
-  ];
+  const mockMatched = [{ id: "68a8336a5c3d0dec522a1762", weight: 0.76 }];
 
   // randomly shuffle the matched documents and return 5 documents
   const shuffled = mockMatched

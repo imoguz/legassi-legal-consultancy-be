@@ -6,6 +6,7 @@ const allowedTypes = [
   "application/x-zip-compressed",
   "image/jpeg",
   "image/png",
+  "image/jpg",
 ];
 
 const storage = multer.memoryStorage();
@@ -22,4 +23,8 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-module.exports = upload.single("file");
+module.exports = {
+  singleFile: (fieldName) => upload.single(fieldName),
+  multipleFiles: (fieldName, maxCount) => upload.array(fieldName, maxCount),
+  anyFiles: () => upload.any(),
+};

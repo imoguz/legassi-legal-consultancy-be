@@ -4,179 +4,172 @@ const { Schema, model } = require("mongoose");
 const validator = require("validator");
 const { hashPassword } = require("../helpers/passwordEncrypt");
 
-// Salary Subschema
 const salarySchema = new Schema(
   {
-    baseAmount: { type: Number, required: true },
-    currency: { type: String, default: "USD", trim: true },
-    netAmount: { type: Number },
+    amount: { type: Number, min: 0 },
+    currency: {
+      type: String,
+      default: "USD",
+    },
     paySchedule: {
       type: String,
-      enum: ["monthly", "weekly", "yearly"],
-      default: "monthly",
+      enum: ["MONTHLY", "BI_WEEKLY", "WEEKLY", "ANNUAL"],
+      default: "MONTHLY",
     },
-    bonus: { type: Number, default: 0 },
+    bonus: {
+      type: Number,
+      default: 0,
+      min: 0,
+      set: (v) => Math.round(v * 100) / 100,
+    },
+    bonusDescription: { type: String, trim: true },
     benefits: [{ type: String, trim: true }],
-    lastUpdated: { type: Date, default: Date.now },
   },
   { _id: false }
 );
 
+const addressSchema = new Schema(
+  {
+    apartment: { type: String, trim: true },
+    street: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    postalCode: { type: String, trim: true },
+    country: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
+const barAdmissionSchema = new Schema(
+  {
+    jurisdiction: { type: String, trim: true },
+    barNumber: { type: String, trim: true },
+    admissionDate: { type: Date },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE", "SUSPENDED", "RETIRED"],
+      default: "ACTIVE",
+    },
+  },
+  { _id: false }
+);
+
+/* --- Main Schema --- */
 const employeeSchema = new Schema(
   {
-    firstName: {
+    firstname: {
       type: String,
       required: true,
       trim: true,
+      maxLength: 50,
     },
-    lastName: {
+    lastname: {
       type: String,
       required: true,
       trim: true,
+      maxLength: 50,
     },
-    dateOfBirth: {
-      type: Date,
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      validate: { validator: validator.isEmail, message: "Invalid email." },
     },
-    nationalId: {
+    phone: {
       type: String,
       trim: true,
-      select: false,
     },
+    dateOfBirth: { type: Date },
+    nationalId: { type: String, trim: true, select: false },
 
-    emails: [
-      {
-        address: {
-          type: String,
-          trim: true,
-          lowercase: true,
-          validate: {
-            validator: validator.isEmail,
-            message: "Please enter a valid email address.",
-          },
-        },
-        isPrimary: { type: Boolean, default: false },
-      },
-    ],
-
-    phoneNumbers: [
-      {
-        label: {
-          type: String,
-          enum: ["mobile", "office", "home", "emergency", "fax", "other"],
-          trim: true,
-        },
-        number: { type: String, trim: true },
-        isPrimary: { type: Boolean, default: false },
-      },
-    ],
-
-    address: {
-      street: { type: String, trim: true },
-      city: { type: String, trim: true },
-      state: { type: String, trim: true },
-      postalCode: { type: String, trim: true },
-      country: { type: String, trim: true },
-    },
+    address: addressSchema,
 
     department: {
       type: String,
+      required: true,
       enum: [
-        "corporate-law",
-        "litigation",
-        "ip",
-        "family-law",
-        "real-estate",
-        "tax",
-        "finance",
-        "hr",
-        "it",
-        "admin",
-        "business-dev",
-        "compliance",
+        "CORPORATE",
+        "LITIGATION",
+        "FAMILY",
+        "REAL_ESTATE",
+        "IP",
+        "TAX",
+        "FINANCE",
+        "ADMIN",
+        "HR",
+        "IT",
+        "COMPLIANCE",
       ],
-      default: "litigation",
-      trim: true,
+      required: true,
     },
-
     position: {
       type: String,
       enum: [
-        "juniorLawyer",
-        "seniorLawyer",
-        "paralegal",
-        "accountant",
-        "hrManager",
-        "itSpecialist",
-        "adminStaff",
-        "intern",
-        "contractor",
-        "other",
+        "PARTNER",
+        "SENIOR_ASSOCIATE",
+        "ASSOCIATE",
+        "PARALEGAL",
+        "ASSISTANT",
+        "INTERN",
+        "STAFF",
+        "OTHER",
       ],
-      trim: true,
-      default: "juniorLawyer",
+      required: true,
     },
+    practiceAreas: [
+      {
+        type: String,
+        enum: [
+          "M&A",
+          "GOVERNANCE",
+          "LITIGATION",
+          "ARBITRATION",
+          "DIVORCE",
+          "PATENT",
+          "TRADEMARK",
+          "TAX",
+          "BANKING",
+          "DATA_PRIVACY",
+          "COMPLIANCE",
+        ],
+      },
+    ],
+    barAdmissions: [barAdmissionSchema],
 
     employmentType: {
       type: String,
-      enum: ["full-time", "part-time", "intern", "contract", "consultant"],
-      default: "full-time",
+      enum: ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"],
+      default: "FULL_TIME",
     },
-
-    status: {
+    employmentStatus: {
       type: String,
-      enum: ["active", "on-leave", "terminated", "resigned", "retired"],
-      default: "active",
+      enum: ["ACTIVE", "ON_LEAVE", "TERMINATED", "RETIRED"],
+      default: "ACTIVE",
     },
 
-    systemRole: {
-      type: String,
-      enum: [
-        "admin",
-        "lawyer",
-        "assistant",
-        "finance",
-        "staff",
-        "hr",
-        "complianceOfficer",
-      ],
-      default: "staff",
-    },
-
-    hireDate: {
-      type: Date,
-      default: Date.now,
-    },
-    terminationDate: {
-      type: Date,
-    },
+    hireDate: { type: Date, default: Date.now },
+    terminationDate: { type: Date },
 
     salary: salarySchema,
 
+    emergencyContact: {
+      name: { type: String, trim: true },
+      relationship: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      email: { type: String, trim: true },
+    },
+
     profileImage: {
-      type: String,
-      trim: true,
+      id: { type: String, trim: true },
+      url: { type: String, trim: true },
     },
-    tags: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-    notes: {
-      type: String,
-      trim: true,
-    },
+    tags: [{ type: String, trim: true }],
+    notes: { type: String, trim: true },
 
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    isDeleted: { type: Boolean, default: false },
+    createdBy: { type: Schema.Types.ObjectId, ref: "Employee" },
   },
   {
     timestamps: true,
@@ -184,42 +177,16 @@ const employeeSchema = new Schema(
   }
 );
 
-// Enforce single primary
-function enforceSinglePrimary(list) {
-  if (!Array.isArray(list) || list.length === 0) return list;
-  let primaryFound = false;
-  return list.map((item) => {
-    if (item.isPrimary && !primaryFound) {
-      primaryFound = true;
-      return item;
-    }
-    return { ...item, isPrimary: false };
-  });
-}
-
 // Hooks
 employeeSchema.pre("save", async function (next) {
   if (this.isModified("nationalId") && this.nationalId) {
     this.nationalId = await hashPassword(this.nationalId);
   }
-  this.emails = enforceSinglePrimary(this.emails);
-  this.phoneNumbers = enforceSinglePrimary(this.phoneNumbers);
-  next();
 });
 
-// Run validators for findOneAndUpdate
 employeeSchema.pre("findOneAndUpdate", async function (next) {
-  this.setOptions({ runValidators: true, context: "query" });
-
   const update = this.getUpdate();
   if (!update) return next();
-
-  if (update.emails) {
-    update.emails = enforceSinglePrimary(update.emails);
-  }
-  if (update.phoneNumbers) {
-    update.phoneNumbers = enforceSinglePrimary(update.phoneNumbers);
-  }
   if (update.nationalId) {
     update.nationalId = await hashPassword(update.nationalId);
   }

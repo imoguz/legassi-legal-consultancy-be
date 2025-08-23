@@ -2,6 +2,10 @@
 
 const Employee = require("../models/employee.model");
 const { createAuditLog } = require("../helpers/audit.helper");
+const {
+  uploadToCloudinaryBuffer,
+  deleteFromCloudinary,
+} = require("../helpers/cloudinary");
 
 module.exports = {
   create: async (req, res, next) => {
@@ -34,8 +38,8 @@ module.exports = {
 
       const employees = await req.queryHandler(
         Employee,
-        ["createdBy", "updatedBy", "deletedBy"], // populate
-        ["firstName", "lastName", "department", "position", "systemRole"], // searchable
+        ["createdBy"], // populate
+        ["firstname", "lastname", "department", "position"], // searchable
         baseFilters
       );
 
@@ -50,7 +54,7 @@ module.exports = {
       const employee = await Employee.findOne({
         _id: req.params.id,
         isDeleted: false,
-      }).populate("createdBy updatedBy deletedBy");
+      }).populate("createdBy");
 
       if (!employee) return res.status(404).send("Employee not found.");
 
@@ -69,24 +73,60 @@ module.exports = {
 
       if (!employee) return res.status(404).send("Employee not found.");
 
-      const changedFields = Object.keys(req.body).filter(
-        (key) => employee[key] !== req.body[key]
-      );
       const previousValues = {};
       const newValues = {};
 
-      changedFields.forEach((field) => {
-        previousValues[field] = employee[field];
-        newValues[field] = req.body[field];
+      // Cloudinary upload
+      let profileImageUpdate = null;
+
+      if (req.file) {
+        const result = await uploadToCloudinaryBuffer(
+          req.file.buffer,
+          req.file.originalname
+        );
+
+        if (result?.public_id) {
+          if (employee.profileImage?.id) {
+            await deleteFromCloudinary(employee.profileImage.id);
+          }
+          profileImageUpdate = {
+            id: result.public_id,
+            url: result.secure_url,
+          };
+        }
+      }
+
+      const parsedBody = {};
+      Object.keys(req.body).forEach((key) => {
+        try {
+          parsedBody[key] = JSON.parse(req.body[key]);
+        } catch {
+          parsedBody[key] = req.body[key];
+        }
       });
 
-      if (changedFields.length === 0) {
+      Object.keys(parsedBody).forEach((key) => {
+        if (JSON.stringify(employee[key]) !== JSON.stringify(parsedBody[key])) {
+          previousValues[key] = employee[key];
+          newValues[key] = parsedBody[key];
+        }
+      });
+
+      if (profileImageUpdate) {
+        previousValues.profileImage = employee.profileImage;
+        newValues.profileImage = profileImageUpdate;
+      }
+
+      if (Object.keys(previousValues).length === 0 && !profileImageUpdate) {
         return res
           .status(200)
           .json({ message: "No valid changes provided for update." });
       }
 
-      Object.assign(employee, req.body, { updatedBy: req.user.id });
+      Object.assign(employee, parsedBody, { updatedBy: req.user.id });
+      if (profileImageUpdate) {
+        employee.profileImage = profileImageUpdate;
+      }
       await employee.save();
 
       // Audit log
@@ -94,7 +134,7 @@ module.exports = {
         collectionName: "employees",
         documentId: employee._id,
         changedBy: req.user.id,
-        changedFields,
+        changedFields: [...Object.keys(previousValues)],
         operation: "update",
         previousValues,
         newValues,

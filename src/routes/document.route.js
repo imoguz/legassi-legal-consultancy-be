@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const uploadSinglePDF = require("../middlewares/multer");
+const { singleFile } = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
 const requirePermission = require("../middlewares/requirePermission");
 
@@ -15,7 +15,12 @@ const {
 // JWT Verification for all routes
 router.use(jwtVerification);
 
-router.post("/", requirePermission("CREATE_DOCUMENT"), uploadSinglePDF, create);
+router.post(
+  "/",
+  requirePermission("CREATE_DOCUMENT"),
+  singleFile("file"),
+  create
+);
 
 router.get("/", requirePermission("LIST_DOCUMENTS"), readMany);
 

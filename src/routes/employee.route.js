@@ -1,6 +1,7 @@
 "use strict";
 
 const router = require("express").Router();
+const { singleFile } = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
 const {
   create,
@@ -23,7 +24,7 @@ router
 router
   .route("/:id")
   .get(requirePermission("VIEW_EMPLOYEE"), readOne)
-  .put(requirePermission("UPDATE_EMPLOYEE"), update)
+  .put(requirePermission("UPDATE_EMPLOYEE"), singleFile("file"), update)
   .delete(requirePermission("DELETE_EMPLOYEE"), _delete);
 
 router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);
