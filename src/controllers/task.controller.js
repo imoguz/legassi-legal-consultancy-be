@@ -75,7 +75,6 @@ module.exports = {
           $or: [{ assignedTo: req.user.id }, { createdBy: req.user.id }],
         };
       }
-
       const tasks = await req.queryHandler(
         Task,
         [
@@ -130,41 +129,22 @@ module.exports = {
     }
   },
 
-  getMatter: async (req, res, next) => {
+  getTasksByMatter: async (req, res, next) => {
     try {
-      let baseFilters = { isDeleted: false };
-
-      if (req.user.role === "admin" || req.user.role === "manager") {
-        baseFilters = { isDeleted: false };
-      } else if (req.user.role === "staff") {
-        baseFilters = {
-          isDeleted: false,
-          $or: [
-            { assignedAttorney: req.user.id },
-            { "teamMembers.member": req.user.id },
-          ],
-        };
-      } else {
-        baseFilters = { _id: null };
-      }
-
-      const result = await req.queryHandler(
-        Matter,
-        null, // populate
-        ["title, matterNumber"], // searchable fields
+      const baseFilters = { isDeleted: false, matter: req.query.matter };
+      const tasks = await req.queryHandler(
+        Task,
+        [
+          { path: "matter", select: "_id title matterNumber" },
+          {
+            path: "assignedTo",
+            select: "_id firstname lastname email position profileUrl",
+          },
+        ],
+        ["title", "status", "priority"],
         baseFilters
       );
-
-      const response = result.data.map((m) => ({
-        matterId: m._id,
-        title: m.title,
-        matterNumber: m.matterNumber,
-      }));
-
-      res.status(200).json({
-        data: response,
-        pagination: result.pagination,
-      });
+      res.status(200).json(tasks);
     } catch (err) {
       next(err);
     }

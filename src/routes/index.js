@@ -13,5 +13,6 @@ router.use("/matters", require("./matter.route"));
 router.use("/contacts", require("./contact.route"));
 router.use("/employees", require("./employee.route"));
 router.use("/tasks", require("./task.route"));
+router.use("/reports", require("./reports.route"));
 
 module.exports = router;

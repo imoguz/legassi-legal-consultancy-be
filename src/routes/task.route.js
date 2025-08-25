@@ -8,7 +8,7 @@ const {
   update,
   _delete,
   purge,
-  getMatter,
+  getTasksByMatter,
 } = require("../controllers/task.controller");
 
 // JWT Verification for all routes
@@ -27,6 +27,6 @@ router
 
 router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);
 
-router.get("/matter/list", requirePermission("LIST_MATTERS"), getMatter);
+router.get("/matter/list", requirePermission("LIST_MATTERS"), getTasksByMatter);
 
 module.exports = router;

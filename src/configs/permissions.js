@@ -46,6 +46,9 @@ const PERMISSIONS = {
   UPDATE_TASK: ["admin", "manager", "staff"],
   DELETE_TASK: ["admin", "manager", "staff"],
   LIST_TASKS: ["admin", "manager", "staff"],
+
+  // Reports
+  VIEW_REPORTS: ["admin", "manager", "staff"],
 };
 
 module.exports = PERMISSIONS;
