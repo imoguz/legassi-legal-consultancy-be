@@ -129,9 +129,37 @@ module.exports = {
     }
   },
 
+  getMatters: async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const skip = (page - 1) * limit;
+
+      const [matters, total] = await Promise.all([
+        Matter.find({ isDeleted: false })
+          .select("_id title matterNumber")
+          .skip(skip)
+          .limit(limit),
+        Matter.countDocuments({ isDeleted: false }),
+      ]);
+
+      res.status(200).json({
+        data: matters,
+        pagination: {
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   getTasksByMatter: async (req, res, next) => {
     try {
-      const baseFilters = { isDeleted: false, matter: req.query.matter };
+      const baseFilters = { isDeleted: false, matter: req.params.matterId };
       const tasks = await req.queryHandler(
         Task,
         [
@@ -144,6 +172,7 @@ module.exports = {
         ["title", "status", "priority"],
         baseFilters
       );
+
       res.status(200).json(tasks);
     } catch (err) {
       next(err);

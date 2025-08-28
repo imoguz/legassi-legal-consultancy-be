@@ -9,6 +9,7 @@ const {
   _delete,
   purge,
   getTasksByMatter,
+  getMatters,
 } = require("../controllers/task.controller");
 
 // JWT Verification for all routes
@@ -19,6 +20,13 @@ router
   .post(requirePermission("CREATE_TASK"), create)
   .get(requirePermission("LIST_TASKS"), readMany);
 
+router.get("/matters", requirePermission("LIST_MATTERS"), getMatters);
+router.get(
+  "/matters/:matterId",
+  requirePermission("LIST_TASKS"),
+  getTasksByMatter
+);
+
 router
   .route("/:id")
   .get(requirePermission("VIEW_TASK"), readOne)
@@ -26,7 +34,5 @@ router
   .delete(requirePermission("DELETE_TASK"), _delete);
 
 router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);
-
-router.get("/matter/list", requirePermission("LIST_MATTERS"), getTasksByMatter);
 
 module.exports = router;
