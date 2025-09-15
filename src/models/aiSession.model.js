@@ -14,6 +14,16 @@ const aiSessionSchema = new Schema(
       trim: true,
       default: "New Chat",
     },
+    conversationId: {
+      type: String,
+      index: true,
+    },
+    documentIds: [
+      {
+        type: String,
+        default: [],
+      },
+    ],
     lastInteractionAt: {
       type: Date,
       default: () => Date.now(),

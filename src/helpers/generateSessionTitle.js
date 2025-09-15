@@ -1,13 +1,34 @@
-function generateSessionTitle(text) {
-  if (!text || typeof text !== "string") return "AI Chat";
+function generateSessionTitle(chunks, userPrompt) {
+  if (!Array.isArray(chunks)) {
+    return userPrompt ? truncateTitle(userPrompt) : "AI Chat";
+  }
 
-  const firstSentence = text.split(".")[0].trim();
-  const wordArray = firstSentence.split(" ").filter(Boolean);
+  let fullText = "";
+  const contentChunks = chunks.filter(
+    (chunk) => chunk.type === "content" && chunk.content
+  );
 
-  if (wordArray.length < 1) return "AI Chat";
+  for (let i = 0; i < Math.min(3, contentChunks.length); i++) {
+    fullText += contentChunks[i].content + " ";
+  }
 
-  const slicedWords = wordArray.slice(0, 8).join(" ");
-  return slicedWords;
+  if (!fullText.trim()) {
+    return userPrompt ? truncateTitle(userPrompt) : "AI Chat";
+  }
+
+  const sentences = fullText
+    .split(/[.!?]+/)
+    .filter((s) => s.trim().length > 10);
+  if (sentences.length > 0) {
+    return truncateTitle(sentences[0]);
+  }
+
+  return truncateTitle(fullText);
+}
+
+function truncateTitle(text, maxWords = 6) {
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.slice(0, maxWords).join(" ");
 }
 
 module.exports = generateSessionTitle;

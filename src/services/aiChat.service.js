@@ -2,54 +2,49 @@
 
 const axios = require("axios");
 
-async function sendPromptToAIService(prompt) {
-  // try {
-  //   const response = await axios.post(
-  //     process.env.AI_SERVICE_URL,
-  //     { prompt },
-  //     {
-  //       headers: {
-  //         Authorization: `Bearer ${process.env.AI_SERVICE_KEY}`,
-  //       },
-  //     }
-  //   );
+async function sendPromptToAIService(prompt, conversationId, onData, onEnd) {
+  const response = await axios({
+    method: "post",
+    url: "http://localhost:8000/api/v1/ask/stream",
+    data: {
+      text: prompt,
+      mode: "general",
+      document_ids: [],
+      conversation_id: conversationId || null,
+    },
+    responseType: "stream",
+    headers: {
+      "X-API-KEY": process.env.AI_SERVICE_KEY || "backend-dev-key-101",
+    },
+  });
 
-  //   return response.data;
-  // } catch (err) {
-  //   console.error("AI Service Error:", err.message);
-  //   return { text: "AI service not available", weight: 0 };
-  // }
+  let buffer = "";
+  let returnedConversationId = conversationId;
 
-  const mockResponses = [
-    {
-      text: "Alimony is calculated based on duration, income, and needs.",
-      weight: 0.91,
-    },
-    {
-      text: "Courts consider prenuptial agreements when awarding alimony.",
-      weight: 0.87,
-    },
-    {
-      text: "Spouse’s ability to support themselves affects alimony.",
-      weight: 0.93,
-    },
-    {
-      text: "Standard of living during marriage is key in alimony.",
-      weight: 0.9,
-    },
-    {
-      text: "Child custody can influence alimony decisions.",
-      weight: 0.89,
-    },
-  ];
+  response.data.on("data", (chunk) => {
+    const text = chunk.toString();
+    buffer += text;
 
-  function getRandomMockResponse() {
-    const index = Math.floor(Math.random() * mockResponses.length);
-    return mockResponses[index];
-  }
+    try {
+      const parsed = JSON.parse(text.replace(/^data:\s*/, ""));
+      if (parsed.conversation_id) {
+        returnedConversationId = parsed.conversation_id;
+      }
+    } catch (e) {
+      // ignore
+    }
 
-  return getRandomMockResponse();
-  return response;
+    onData(text);
+  });
+
+  response.data.on("end", () => {
+    onEnd(buffer, returnedConversationId);
+  });
+
+  response.data.on("error", (err) => {
+    console.error("Stream error:", err.message);
+    onEnd(buffer, returnedConversationId, err);
+  });
 }
 
 module.exports = { sendPromptToAIService };

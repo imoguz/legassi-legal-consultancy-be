@@ -9,10 +9,10 @@ const createChatMessage = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { prompt } = req.body;
-
     if (!prompt?.trim()) {
       return res.status(400).send({ message: "Prompt is required." });
     }
+
     const session = await AiSession.findOne({
       _id: sessionId,
       user: req.user.id,
@@ -24,39 +24,45 @@ const createChatMessage = async (req, res, next) => {
         .send({ message: "Session not found or unauthorized." });
     }
 
-    // send promp to AI service
-    const aiResponse = await sendPromptToAIService(prompt);
+    // stream headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    const chat = await AiChat.create({
-      user: req.user.id,
-      session: sessionId,
+    await sendPromptToAIService(
       prompt,
-      response: aiResponse,
-    });
-
-    // update session interaction date
-    session.lastInteractionAt = new Date();
-
-    // Generate new title if it is default
-    if (session.title === "New Chat") {
-      const aiText =
-        typeof aiResponse === "string" ? aiResponse : aiResponse.text;
-      const newTitle = generateSessionTitle(aiText);
-      session.title = newTitle;
-    }
-
-    await session.save();
-
-    const data = {
-      prompt,
-      response: aiResponse,
-      session: {
-        _id: session._id,
-        title: session.title,
-        lastInteractionAt: session.lastInteractionAt,
+      session.conversationId,
+      (chunk) => {
+        res.write(chunk);
       },
-    };
-    res.status(201).json(data);
+      async (fullResponse, newConversationId, err) => {
+        if (!err) {
+          await AiChat.create({
+            user: req.user.id,
+            session: sessionId,
+            prompt,
+            response: fullResponse,
+          });
+
+          session.lastInteractionAt = new Date();
+
+          if (
+            newConversationId &&
+            session.conversationId !== newConversationId
+          ) {
+            session.conversationId = newConversationId;
+          }
+
+          if (session.title === "New Chat") {
+            session.title =
+              generateSessionTitle(fullResponse, prompt) || "New Chat";
+          }
+
+          await session.save();
+        }
+        res.end();
+      }
+    );
   } catch (err) {
     next(err);
   }
