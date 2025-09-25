@@ -48,6 +48,13 @@ const PERMISSIONS = {
   LIST_TASKS: ["admin", "manager", "staff"],
   LIST_MATTERS: ["admin", "manager", "staff"],
 
+  // Calendar Events
+  CREATE_CALENDAR_EVENT: ["admin", "manager", "staff"],
+  VIEW_CALENDAR_EVENT: ["admin", "manager", "staff"],
+  UPDATE_CALENDAR_EVENT: ["admin", "manager", "staff"],
+  DELETE_CALENDAR_EVENT: ["admin", "manager", "staff"],
+  LIST_CALENDAR_EVENTS: ["admin", "manager", "staff"],
+
   // Reports
   VIEW_REPORTS: ["admin", "manager", "staff"],
 };
