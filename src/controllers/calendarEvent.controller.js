@@ -1,6 +1,8 @@
 "use strict";
 
 const CalendarEvent = require("../models/calendarEvent.model");
+const Task = require("../models/task.model");
+
 const { createAuditLog } = require("../helpers/audit.helper");
 
 module.exports = {
@@ -56,6 +58,7 @@ module.exports = {
     try {
       const { start, end } = req.query;
 
+      // ---- Calendar Event filters ----
       const filters = { isDeleted: false };
       if (start && end) {
         filters.startDate = { $gte: new Date(start) };
@@ -69,6 +72,7 @@ module.exports = {
         ];
       }
 
+      // ---- Calendar Events ----
       const events = await CalendarEvent.find(filters)
         .populate("matter", "_id title matterNumber")
         .populate("task", "_id title status")
@@ -78,7 +82,47 @@ module.exports = {
         )
         .populate("createdBy", "_id firstname lastname email");
 
-      res.status(200).json(events);
+      // ---- Tasks - on dueDate ----
+      const taskFilters = { isDeleted: false };
+      if (start && end) {
+        taskFilters.dueDate = {
+          $gte: new Date(start),
+          $lte: new Date(end),
+        };
+      }
+
+      if (req.user.role !== "admin" && req.user.role !== "manager") {
+        taskFilters.$or = [
+          { assignedTo: req.user.id },
+          { createdBy: req.user.id },
+        ];
+      }
+
+      const tasks = await Task.find(taskFilters)
+        .populate("matter", "_id title matterNumber")
+        .populate("assignedTo", "_id firstname lastname email");
+
+      // Map tasks into calendar-event format
+      const taskEvents = tasks.map((task) => ({
+        _id: `task-${task._id}`,
+        title: task.title,
+        description: task.description,
+        startDate: task.dueDate,
+        endDate: task.dueDate,
+        allDay: true,
+        matter: task.matter,
+        task: { _id: task._id, title: task.title, status: task.status },
+        participants: [task.assignedTo],
+        eventType: "task-deadline",
+        color: "#faad14",
+        createdBy: task.createdBy,
+        isTask: true,
+      }));
+
+      // ---- Merge events ----
+      const merged = [...events, ...taskEvents];
+
+      res.status(200).json(merged);
     } catch (err) {
       next(err);
     }
