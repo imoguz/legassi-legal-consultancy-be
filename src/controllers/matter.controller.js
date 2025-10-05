@@ -3,6 +3,8 @@
 const { createAuditLog } = require("../helpers/audit.helper");
 const generateMatterNumber = require("../helpers/generateMatterNumber");
 const Matter = require("../models/matter.model");
+const { notifyUsers } = require("../helpers/notification.helper");
+const User = require("../models/user.model");
 
 module.exports = {
   create: async (req, res, next) => {
@@ -21,6 +23,13 @@ module.exports = {
         opposingParty,
         assignedAttorney,
       } = req.body;
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       const finalMatterNumber = await generateMatterNumber();
       const finalAssignedAttorney =
@@ -70,6 +79,24 @@ module.exports = {
         operation: "create",
         previousValues: {},
         newValues: newMatter.toObject(),
+      });
+
+      // Notification
+      const recipients = [
+        newMatter.assignedAttorney,
+        ...newMatter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "New Matter Created",
+        message: `${currentUser.firstname} ${currentUser.lastname} created a new matter: ${newMatter.title}`,
+        type: "matter",
+        relatedId: newMatter._id,
+        createdBy: req.user.id,
       });
 
       res.status(201).json(newMatter);
@@ -166,6 +193,13 @@ module.exports = {
 
       if (!matter) return res.status(404).send("Matter not found.");
 
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const isAuthorized =
         req.user.role === "admin" ||
         matter.assignedAttorney.toString() === req.user.id;
@@ -206,6 +240,24 @@ module.exports = {
         newValues,
       });
 
+      // Notification
+      const recipients = [
+        matter.assignedAttorney,
+        ...matter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "Matter Updated",
+        message: `${currentUser.firstname} ${currentUser.lastname} updated the matter: ${matter.title}`,
+        type: "matter",
+        relatedId: matter._id,
+        createdBy: req.user.id,
+      });
+
       res.status(200).json(matter);
     } catch (err) {
       next(err);
@@ -220,6 +272,13 @@ module.exports = {
       });
 
       if (!matter) return res.status(404).send("Matter not found.");
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       const isAuthorized =
         req.user.role === "admin" ||
@@ -247,6 +306,29 @@ module.exports = {
         newValues: { isDeleted: true },
       });
 
+      // Notification
+      const recipients = [
+        matter.assignedAttorney,
+        ...matter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "Matter Deleted",
+        message: `${currentUser.firstname} ${currentUser.lastname} deleted the matter: ${matter.title}`,
+        type: "matter",
+        relatedId: matter._id,
+        createdBy: req.user.id,
+        metadata: {
+          actionable: false,
+          originalTitle: matter.title,
+          operation: "delete",
+        },
+      });
+
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -262,6 +344,13 @@ module.exports = {
       const matter = await Matter.findById(req.params.id);
       if (!matter) return res.status(404).send("Matter not found.");
 
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       // Audit log
       await createAuditLog({
         collectionName: "matters",
@@ -274,6 +363,29 @@ module.exports = {
       });
 
       await Matter.deleteOne({ _id: req.params.id });
+
+      // Notification (only admin)
+      const recipients = [
+        matter.assignedAttorney,
+        ...matter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "Matter Purged",
+        message: `${currentUser.firstname} ${currentUser.lastname} permanently deleted the matter: ${matter.title}`,
+        type: "matter",
+        relatedId: matter._id,
+        createdBy: req.user.id,
+        metadata: {
+          actionable: false,
+          originalTitle: matter.title,
+          operation: "purge",
+        },
+      });
 
       res.status(204).send();
     } catch (err) {

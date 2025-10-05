@@ -2,8 +2,9 @@
 
 const CalendarEvent = require("../models/calendarEvent.model");
 const Task = require("../models/task.model");
-
 const { createAuditLog } = require("../helpers/audit.helper");
+const { notifyUsers } = require("../helpers/notification.helper");
+const User = require("../models/user.model");
 
 module.exports = {
   create: async (req, res, next) => {
@@ -21,6 +22,13 @@ module.exports = {
         eventType,
         color,
       } = req.body;
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       const newEvent = await CalendarEvent.create({
         title,
@@ -47,6 +55,18 @@ module.exports = {
         previousValues: {},
         newValues: newEvent.toObject(),
       });
+
+      // Notification
+      if (participants && participants.length > 0) {
+        await notifyUsers({
+          recipients: participants,
+          title: "New Calendar Event",
+          message: `${currentUser.firstname} ${currentUser.lastname} added you to an event: ${newEvent.title}`,
+          type: "calendar",
+          relatedId: newEvent._id,
+          createdBy: req.user.id,
+        });
+      }
 
       res.status(201).json(newEvent);
     } catch (err) {
@@ -166,7 +186,15 @@ module.exports = {
         _id: req.params.id,
         isDeleted: false,
       });
+
       if (!event) return res.status(404).send("Event not found.");
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       if (
         req.user.role !== "admin" &&
@@ -206,6 +234,18 @@ module.exports = {
         newValues,
       });
 
+      // Notification
+      if (event.participants && event.participants.length > 0) {
+        await notifyUsers({
+          recipients: event.participants,
+          title: "Calendar Event Updated",
+          message: `${currentUser.firstname} ${currentUser.lastname} updated the event: ${event.title}`,
+          type: "calendar",
+          relatedId: event._id,
+          createdBy: req.user.id,
+        });
+      }
+
       res.status(200).json(event);
     } catch (err) {
       next(err);
@@ -218,7 +258,15 @@ module.exports = {
         _id: req.params.id,
         isDeleted: false,
       });
+
       if (!event) return res.status(404).send("Event not found.");
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       if (
         req.user.role !== "admin" &&
@@ -241,6 +289,23 @@ module.exports = {
         newValues: { isDeleted: true },
       });
 
+      // Notification
+      if (event.participants && event.participants.length > 0) {
+        await notifyUsers({
+          recipients: event.participants,
+          title: "Calendar Event Deleted",
+          message: `${currentUser.firstname} ${currentUser.lastname} deleted the event: ${event.title}`,
+          type: "calendar",
+          relatedId: event._id,
+          createdBy: req.user.id,
+          metadata: {
+            actionable: false,
+            originalTitle: event.title,
+            operation: "delete",
+          },
+        });
+      }
+
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -253,7 +318,15 @@ module.exports = {
         return res.status(403).send("Only admins can purge events.");
 
       const event = await CalendarEvent.findById(req.params.id);
+
       if (!event) return res.status(404).send("Event not found.");
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       await createAuditLog({
         collectionName: "calendarEvents",
@@ -266,6 +339,24 @@ module.exports = {
       });
 
       await CalendarEvent.deleteOne({ _id: req.params.id });
+
+      // Notification
+      if (event.participants && event.participants.length > 0) {
+        await notifyUsers({
+          recipients: event.participants,
+          title: "Calendar Event Purged",
+          message: `${currentUser.firstname} ${currentUser.lastname} permanently deleted the event: ${event.title}`,
+          type: "calendar",
+          relatedId: event._id,
+          createdBy: req.user.id,
+          metadata: {
+            actionable: false,
+            originalTitle: event.title,
+            operation: "purge",
+          },
+        });
+      }
+
       res.status(204).send();
     } catch (err) {
       next(err);

@@ -15,5 +15,6 @@ router.use("/employees", require("./employee.route"));
 router.use("/tasks", require("./task.route"));
 router.use("/reports", require("./reports.route"));
 router.use("/calendar-events", require("./calendarEvent.route"));
+router.use("/notifications", require("./notification.route"));
 
 module.exports = router;

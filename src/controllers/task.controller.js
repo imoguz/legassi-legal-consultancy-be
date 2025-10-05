@@ -3,12 +3,21 @@
 const { createAuditLog } = require("../helpers/audit.helper");
 const Task = require("../models/task.model");
 const Matter = require("../models/matter.model");
+const { notifyUsers } = require("../helpers/notification.helper");
+const User = require("../models/user.model");
 
 module.exports = {
   create: async (req, res, next) => {
     try {
       const { matter, title, description, assignedTo, dueDate, priority } =
         req.body;
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       const relatedMatter = await Matter.findOne({
         _id: matter,
@@ -55,6 +64,25 @@ module.exports = {
         operation: "create",
         previousValues: {},
         newValues: newTask.toObject(),
+      });
+
+      // Notification
+      const recipients = [
+        assignedTo,
+        relatedMatter.assignedAttorney,
+        ...relatedMatter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "New Task Created",
+        message: `${currentUser.firstname} ${currentUser.lastname} created a new task: ${title}`,
+        type: "task",
+        relatedId: newTask._id,
+        createdBy: req.user.id,
       });
 
       res.status(201).json(newTask);
@@ -186,6 +214,13 @@ module.exports = {
       if (!task || task.isDeleted)
         return res.status(404).send("Task not found.");
 
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const relatedMatter = task.matter;
       const isAuthorized =
         req.user.role === "admin" ||
@@ -229,6 +264,25 @@ module.exports = {
         newValues,
       });
 
+      // Notification
+      const recipients = [
+        task.assignedTo,
+        relatedMatter.assignedAttorney,
+        ...relatedMatter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "Task Updated",
+        message: `${currentUser.firstname} ${currentUser.lastname} updated the task: ${task.title}`,
+        type: "task",
+        relatedId: task._id,
+        createdBy: req.user.id,
+      });
+
       res.status(200).json(task);
     } catch (err) {
       next(err);
@@ -241,7 +295,15 @@ module.exports = {
         _id: req.params.id,
         isDeleted: false,
       }).populate("matter");
+
       if (!task) return res.status(404).send("Task not found.");
+
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       const relatedMatter = task.matter;
       const isAuthorized =
@@ -270,6 +332,30 @@ module.exports = {
         newValues: { isDeleted: true },
       });
 
+      // Notification
+      const recipients = [
+        task.assignedTo,
+        relatedMatter.assignedAttorney,
+        ...relatedMatter.teamMembers.map((tm) => tm.member),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
+
+      await notifyUsers({
+        recipients,
+        title: "Task Deleted",
+        message: `${currentUser.firstname} ${currentUser.lastname} deleted the task: ${task.title}`,
+        type: "task",
+        relatedId: task._id,
+        createdBy: req.user.id,
+        metadata: {
+          actionable: false,
+          originalTitle: task.title,
+          operation: "delete",
+        },
+      });
+
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -285,6 +371,13 @@ module.exports = {
       const task = await Task.findById(req.params.id);
       if (!task) return res.status(404).send("Task not found.");
 
+      const currentUser = await User.findById(req.user.id).select(
+        "firstname lastname email"
+      );
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       // Audit log
       await createAuditLog({
         collectionName: "tasks",
@@ -297,6 +390,34 @@ module.exports = {
       });
 
       await Task.deleteOne({ _id: req.params.id });
+
+      // Notification
+      const relatedMatter = task.matter;
+      const recipients = relatedMatter
+        ? [
+            task.assignedTo,
+            relatedMatter.assignedAttorney,
+            ...relatedMatter.teamMembers.map((tm) => tm.member),
+          ].filter(
+            (recipient, index, self) =>
+              self.findIndex((r) => r.toString() === recipient.toString()) ===
+              index
+          )
+        : [task.assignedTo];
+
+      await notifyUsers({
+        recipients,
+        title: "Task Purged",
+        message: `${currentUser.firstname} ${currentUser.lastname} permanently deleted the task: ${task.title}`,
+        type: "task",
+        relatedId: task._id,
+        createdBy: req.user.id,
+        metadata: {
+          actionable: false,
+          originalTitle: task.title,
+          operation: "purge",
+        },
+      });
 
       res.status(204).send();
     } catch (err) {
