@@ -9,6 +9,8 @@ const {
   readOne,
   readMany,
   readAllStaff,
+  getNotificationPreferences,
+  updateNotificationPreferences,
   update,
   _delete,
   purge,
@@ -24,6 +26,18 @@ router.get(
   jwtVerification,
   requirePermission("LIST_STAFF"),
   readAllStaff
+);
+
+router.get(
+  "/notification-preferences",
+  jwtVerification,
+  getNotificationPreferences
+);
+
+router.put(
+  "/notification-preferences",
+  jwtVerification,
+  updateNotificationPreferences
 );
 
 router

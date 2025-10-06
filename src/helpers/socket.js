@@ -22,11 +22,31 @@ class SocketManager {
 
   setupMiddleware() {
     this.io.use((socket, next) => {
+      // Token değişkenini burada tanımla ki catch bloğunda erişilebilsin
+      let token;
+
       try {
-        const token =
-          socket.handshake.auth.token || socket.handshake.headers.authorization;
+        console.log("🔐 Socket auth attempt:", {
+          hasAuth: !!socket.handshake.auth,
+          authKeys: Object.keys(socket.handshake.auth),
+          hasHeaders: !!socket.handshake.headers,
+          headerKeys: Object.keys(socket.handshake.headers),
+        });
+
+        token = socket.handshake.auth.token;
+
+        if (!token && socket.handshake.headers.authorization) {
+          token = socket.handshake.headers.authorization;
+        }
+
+        console.log("🔐 Extracted token:", {
+          hasToken: !!token,
+          tokenLength: token?.length,
+          tokenPreview: token ? `${token.substring(0, 20)}...` : "NO_TOKEN",
+        });
 
         if (!token) {
+          console.error("❌ No token provided");
           return next(new Error("Authentication error: No token provided"));
         }
 
@@ -35,15 +55,38 @@ class SocketManager {
           ? token.slice(7)
           : token;
 
-        const decoded = jwt.verify(
-          actualToken,
-          process.env.JWT_SECRET || "your-fallback-secret"
-        );
+        if (!actualToken) {
+          console.error("❌ Empty token after cleaning");
+          return next(new Error("Authentication error: Empty token"));
+        }
+
+        if (!process.env.ACCESS_KEY) {
+          console.error("❌ ACCESS_KEY not configured");
+          return next(
+            new Error("Authentication error: Server configuration error")
+          );
+        }
+
+        const decoded = jwt.verify(actualToken, process.env.ACCESS_KEY);
+        console.log("✅ Token decoded successfully for user:", decoded.id);
+
         socket.userId = decoded.id;
+        socket.userRole = decoded.role;
         next();
       } catch (err) {
-        console.error("Socket authentication error:", err.message);
-        next(new Error("Authentication error: Invalid token"));
+        console.error("❌ Socket authentication error:", {
+          message: err.message,
+          name: err.name,
+          tokenPreview: token ? `${token.substring(0, 20)}...` : "NO_TOKEN",
+        });
+
+        if (err.name === "JsonWebTokenError") {
+          next(new Error("Authentication error: Invalid token signature"));
+        } else if (err.name === "TokenExpiredError") {
+          next(new Error("Authentication error: Token expired"));
+        } else {
+          next(new Error("Authentication error: Invalid token"));
+        }
       }
     });
   }

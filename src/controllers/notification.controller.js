@@ -3,6 +3,7 @@
 const Notification = require("../models/notification.model");
 const NotificationService = require("../services/notification.service");
 const { emitToUser } = require("../helpers/socket");
+const User = require("../models/user.model");
 
 module.exports = {
   createNotification: async (req, res, next) => {
@@ -22,6 +23,20 @@ module.exports = {
       if (!user || !title) {
         return res.status(400).json({
           message: "User and title are required",
+        });
+      }
+
+      console.log("user control*********", user);
+      if (user !== req.user.id && req.user.role !== "admin") {
+        return res.status(403).json({
+          message: "Unauthorized to create notifications for other users",
+        });
+      }
+
+      const targetUser = await User.findById(user).select("isActive");
+      if (!targetUser || !targetUser.isActive) {
+        return res.status(404).json({
+          message: "Target user not found or inactive",
         });
       }
 

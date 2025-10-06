@@ -99,6 +99,11 @@ const server = http.createServer(app);
 const { initialize } = require("./src/helpers/socket");
 const socketManager = initialize(server);
 
+// Socket bağlantısını kontrol et
+console.log(
+  `🔌 Socket.IO initialized: ${socketManager ? "SUCCESS" : "FAILED"}`
+);
+
 // ----- Scheduled cleanup job -----
 // const cron = require("node-cron");
 // const NotificationService = require("./src/services/notification.service");

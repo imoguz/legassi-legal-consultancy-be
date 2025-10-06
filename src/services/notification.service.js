@@ -1,7 +1,9 @@
 "use strict";
 
 const Notification = require("../models/notification.model");
+const User = require("../models/user.model");
 const { emitToUser } = require("../helpers/socket");
+const EmailNotificationService = require("./emailNotification.service");
 
 class NotificationService {
   static async createNotification(data) {
@@ -20,7 +22,22 @@ class NotificationService {
         expiresInDays = 30,
       } = data;
 
-      // Calculate expiration date
+      // User kontrolü
+      const userDoc = await User.findById(user).select(
+        "notificationPreferences isActive"
+      );
+      if (!userDoc || !userDoc.isActive) {
+        throw new Error("User not found or inactive");
+      }
+
+      // Notification preferences kontrolü
+      if (!userDoc.canReceiveNotification(type, priority)) {
+        throw new Error(
+          "User has disabled notifications for this type/priority"
+        );
+      }
+
+      // Expiration date
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
@@ -38,15 +55,26 @@ class NotificationService {
         expiresAt,
       });
 
-      // Populate
       const populatedNotification = await Notification.findById(
         notification._id
       )
-        .populate("user", "firstname lastname email profileUrl")
+        .populate(
+          "user",
+          "firstname lastname email profileUrl notificationPreferences"
+        )
         .populate("createdBy", "firstname lastname");
 
-      // Emit real-time notification
-      await this.emitNotificationToUser(user, populatedNotification);
+      // Real-time notification - TEK EVENT TİPİ
+      const unreadCount = await this.getUnreadCount(user);
+      emitToUser(user, "new-notification", {
+        notification: populatedNotification.formatForFrontend(),
+        unreadCount,
+      });
+
+      // Email notification
+      this.sendEmailNotification(user, populatedNotification).catch((error) => {
+        console.error("Email notification failed:", error);
+      });
 
       return populatedNotification;
     } catch (error) {
@@ -55,56 +83,99 @@ class NotificationService {
     }
   }
 
-  static async emitNotificationToUser(userId, notification) {
-    try {
-      const unreadCount = await Notification.countDocuments({
-        user: userId,
-        isRead: false,
-      });
-
-      const emitData = {
-        notification: notification.formatForFrontend(),
-        unreadCount,
-        timestamp: new Date(),
-      };
-
-      return emitToUser(userId, "new-notification", emitData);
-    } catch (error) {
-      console.error("Notification emission error:", error);
-      return false;
-    }
-  }
-
   static async createBulkNotifications(notificationsData) {
     try {
-      const notifications = await Notification.insertMany(notificationsData);
+      const filteredNotifications = [];
+      const userCache = new Map();
 
-      // Emit notifications to respective users
-      const userNotifications = new Map();
-
-      notifications.forEach((notification) => {
-        if (!userNotifications.has(notification.user.toString())) {
-          userNotifications.set(notification.user.toString(), []);
+      // Filter valid notifications based on user preferences
+      for (const data of notificationsData) {
+        if (!userCache.has(data.user.toString())) {
+          const user = await User.findById(data.user).select(
+            "notificationPreferences isActive"
+          );
+          userCache.set(data.user.toString(), user);
         }
-        userNotifications.get(notification.user.toString()).push(notification);
-      });
 
-      for (const [userId, userNotifs] of userNotifications) {
-        const unreadCount = await Notification.countDocuments({
-          user: userId,
-          isRead: false,
-        });
+        const user = userCache.get(data.user.toString());
+        if (
+          user &&
+          user.isActive &&
+          user.canReceiveNotification(data.type, data.priority)
+        ) {
+          filteredNotifications.push({
+            ...data,
+            expiresAt: new Date(
+              Date.now() + (data.expiresInDays || 30) * 24 * 60 * 60 * 1000
+            ),
+          });
+        }
+      }
 
-        emitToUser(userId, "bulk-notifications", {
-          notifications: userNotifs.map((n) => n.formatForFrontend()),
+      const notifications = await Notification.insertMany(
+        filteredNotifications
+      );
+
+      // ✅ TEK EVENT TİPİ - Her notification için ayrı ayrı new-notification emit et
+      for (const notification of notifications) {
+        const populatedNotification = await Notification.findById(
+          notification._id
+        )
+          .populate(
+            "user",
+            "firstname lastname email profileUrl notificationPreferences"
+          )
+          .populate("createdBy", "firstname lastname");
+
+        const unreadCount = await this.getUnreadCount(
+          notification.user.toString()
+        );
+
+        // Aynı event tipi - frontend zaten bunu dinliyor
+        emitToUser(notification.user.toString(), "new-notification", {
+          notification: populatedNotification.formatForFrontend(),
           unreadCount,
         });
+
+        // Email
+        this.sendEmailNotification(
+          notification.user.toString(),
+          populatedNotification
+        ).catch((error) => console.error("Bulk email failed:", error));
       }
 
       return notifications;
     } catch (error) {
       console.error("Bulk notification creation error:", error);
       throw error;
+    }
+  }
+
+  static async sendEmailNotification(userId, notification) {
+    try {
+      await EmailNotificationService.sendNotificationEmail(
+        userId,
+        notification
+      );
+    } catch (error) {
+      console.error("Failed to send email notification:", error);
+    }
+  }
+
+  static async emitNotificationToUser(userId, notification) {
+    try {
+      const unreadCount = await this.getUnreadCount(userId);
+
+      emitToUser(userId, "new-notification", {
+        notification: notification.formatForFrontend(),
+        unreadCount,
+        timestamp: new Date(),
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Notification emission error:", error);
+      return false;
     }
   }
 

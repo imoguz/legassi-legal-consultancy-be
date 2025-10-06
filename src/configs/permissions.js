@@ -9,6 +9,16 @@ const PERMISSIONS = {
   DELETE_USER: ["admin"],
   LIST_USERS: ["admin"],
 
+  // Notification Permissions
+  CREATE_NOTIFICATION: ["admin", "manager", "staff"],
+  VIEW_NOTIFICATION: ["admin", "manager", "staff", "client"],
+  UPDATE_NOTIFICATION: ["admin", "manager", "staff", "client"],
+  DELETE_NOTIFICATION: ["admin", "manager", "staff", "client"],
+  LIST_NOTIFICATIONS: ["admin", "manager", "staff", "client"],
+  MANAGE_NOTIFICATION_PREFERENCES: ["admin", "manager", "staff", "client"],
+  CLEANUP_NOTIFICATIONS: ["admin"],
+  VIEW_ALL_NOTIFICATIONS: ["admin"],
+
   //matter
   CREATE_MATTER: ["admin", "manager", "staff"],
   VIEW_MATTER: ["admin", "manager", "staff"],

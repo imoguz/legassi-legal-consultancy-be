@@ -1,12 +1,10 @@
 "use strict";
 
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
 const setJWT = require("../helpers/setJWT");
 const TokenBlacklist = require("../models/tokenBlacklist.model");
 const User = require("../models/user.model");
 const { sendEmail, resetPasswordTemplate } = require("../helpers/sendEmail");
-const { hashPassword } = require("../helpers/passwordEncrypt");
 
 module.exports = {
   /* Login controller */

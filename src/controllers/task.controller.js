@@ -5,6 +5,7 @@ const Task = require("../models/task.model");
 const Matter = require("../models/matter.model");
 const { notifyUsers } = require("../helpers/notification.helper");
 const User = require("../models/user.model");
+const Notification = require("../models/notification.model");
 
 module.exports = {
   create: async (req, res, next) => {
@@ -83,6 +84,9 @@ module.exports = {
         type: "task",
         relatedId: newTask._id,
         createdBy: req.user.id,
+        metadata: {
+          actionable: true,
+        },
       });
 
       res.status(201).json(newTask);
@@ -281,6 +285,9 @@ module.exports = {
         type: "task",
         relatedId: task._id,
         createdBy: req.user.id,
+        metadata: {
+          actionable: true,
+        },
       });
 
       res.status(200).json(task);
@@ -320,6 +327,23 @@ module.exports = {
       const previousValues = { isDeleted: task.isDeleted };
       task.isDeleted = true;
       await task.save();
+
+      // Update all notifications related this task
+      await Notification.updateMany(
+        {
+          relatedId: task._id,
+          type: "task",
+          "metadata.actionable": { $ne: false },
+        },
+        {
+          $set: {
+            "metadata.actionable": false,
+            "metadata.operation": "task_deleted",
+            "metadata.deletedAt": new Date(),
+            "metadata.deletedBy": req.user.id,
+          },
+        }
+      );
 
       // Audit log
       await createAuditLog({
@@ -377,6 +401,23 @@ module.exports = {
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      // Update all notifications related this task
+      await Notification.updateMany(
+        {
+          relatedId: task._id,
+          type: "task",
+          "metadata.actionable": { $ne: false },
+        },
+        {
+          $set: {
+            "metadata.actionable": false,
+            "metadata.operation": "task_deleted",
+            "metadata.deletedAt": new Date(),
+            "metadata.deletedBy": req.user.id,
+          },
+        }
+      );
 
       // Audit log
       await createAuditLog({

@@ -5,6 +5,7 @@ const generateMatterNumber = require("../helpers/generateMatterNumber");
 const Matter = require("../models/matter.model");
 const { notifyUsers } = require("../helpers/notification.helper");
 const User = require("../models/user.model");
+const Notification = require("../models/notification.model");
 
 module.exports = {
   create: async (req, res, next) => {
@@ -97,6 +98,9 @@ module.exports = {
         type: "matter",
         relatedId: newMatter._id,
         createdBy: req.user.id,
+        metadata: {
+          actionable: true,
+        },
       });
 
       res.status(201).json(newMatter);
@@ -256,6 +260,9 @@ module.exports = {
         type: "matter",
         relatedId: matter._id,
         createdBy: req.user.id,
+        metadata: {
+          actionable: true,
+        },
       });
 
       res.status(200).json(matter);
@@ -294,6 +301,23 @@ module.exports = {
       const previousValues = { isDeleted: matter.isDeleted };
       matter.isDeleted = true;
       await matter.save();
+
+      // Update all notifications related this matter
+      await Notification.updateMany(
+        {
+          relatedId: matter._id,
+          type: "matter",
+          "metadata.actionable": { $ne: false },
+        },
+        {
+          $set: {
+            "metadata.actionable": false,
+            "metadata.operation": "matter_deleted",
+            "metadata.deletedAt": new Date(),
+            "metadata.deletedBy": req.user.id,
+          },
+        }
+      );
 
       // Audit log
       await createAuditLog({
@@ -350,6 +374,22 @@ module.exports = {
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      // Update all notifications related this matter
+      await Notification.updateMany(
+        {
+          relatedId: matter._id,
+          type: "matter",
+        },
+        {
+          $set: {
+            "metadata.actionable": false,
+            "metadata.operation": "matter_purged",
+            "metadata.purgedAt": new Date(),
+            "metadata.purgedBy": req.user.id,
+          },
+        }
+      );
 
       // Audit log
       await createAuditLog({

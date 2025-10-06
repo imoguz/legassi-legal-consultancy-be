@@ -61,6 +61,42 @@ const userSchema = new Schema(
       },
     },
 
+    notificationPreferences: {
+      inApp: {
+        type: Boolean,
+        default: true,
+      },
+      email: {
+        type: Boolean,
+        default: false,
+      },
+      push: {
+        type: Boolean,
+        default: false,
+      },
+
+      types: {
+        task: { type: Boolean, default: true },
+        calendar: { type: Boolean, default: true },
+        matter: { type: Boolean, default: true },
+        document: { type: Boolean, default: true },
+        system: { type: Boolean, default: true },
+        reminder: { type: Boolean, default: true },
+      },
+
+      priorities: {
+        low: { type: Boolean, default: true },
+        medium: { type: Boolean, default: true },
+        high: { type: Boolean, default: true },
+        urgent: { type: Boolean, default: true },
+      },
+    },
+
+    lastEmailNotificationAt: {
+      type: Date,
+      default: null,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
@@ -102,6 +138,22 @@ userSchema.pre("save", async function (next) {
 // Password comparison method
 userSchema.methods.comparePassword = async function (plainPassword) {
   return await comparePassword(plainPassword, this.password);
+};
+
+userSchema.methods.canReceiveNotification = function (type, priority) {
+  if (!this.notificationPreferences.inApp) return false;
+
+  // Tip kontrolü
+  if (this.notificationPreferences.types[type] === false) return false;
+
+  // Öncelik kontrolü
+  if (this.notificationPreferences.priorities[priority] === false) return false;
+
+  return true;
+};
+
+userSchema.methods.canReceiveEmail = function () {
+  return this.notificationPreferences.email && this.isVerified;
 };
 
 module.exports = model("User", userSchema);

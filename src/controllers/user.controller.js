@@ -251,4 +251,71 @@ module.exports = {
       next(err);
     }
   },
+
+  getNotificationPreferences: async (req, res, next) => {
+    try {
+      const user = await User.findById(req.user.id).select(
+        "notificationPreferences"
+      );
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      return res.status(200).json({
+        status: 200,
+        data: user.notificationPreferences,
+        message: "Notification preferences retrieved",
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  updateNotificationPreferences: async (req, res, next) => {
+    try {
+      const { inApp, email, push, types, priorities } = req.body;
+
+      const updateData = {};
+
+      if (inApp !== undefined)
+        updateData["notificationPreferences.inApp"] = inApp;
+      if (email !== undefined)
+        updateData["notificationPreferences.email"] = email;
+      if (push !== undefined) updateData["notificationPreferences.push"] = push;
+
+      // Update Types
+      if (types) {
+        Object.keys(types).forEach((type) => {
+          updateData[`notificationPreferences.types.${type}`] = types[type];
+        });
+      }
+
+      // Update priorities
+      if (priorities) {
+        Object.keys(priorities).forEach((priority) => {
+          updateData[`notificationPreferences.priorities.${priority}`] =
+            priorities[priority];
+        });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      ).select("notificationPreferences");
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      return res.status(200).json({
+        status: 200,
+        data: user.notificationPreferences,
+        message: "Notification preferences updated",
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
