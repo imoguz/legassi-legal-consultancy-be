@@ -56,7 +56,7 @@ module.exports = {
 
       await TokenBlacklist.create({
         token: refreshToken,
-        expiresAt: new Date(decoded.exp * 1000 * 24 * 7),
+        expiresAt: new Date(decoded.exp * 1000),
       });
 
       res.send({ message: "Logged out successfully." });
