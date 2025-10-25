@@ -3,6 +3,7 @@
 const router = require("express").Router();
 const { authLimiter } = require("../middlewares/rateLimiter");
 
+router.use("/health", require("./health.route"));
 router.use("/auth", authLimiter, require("./auth.route"));
 router.use("/users", require("./user.route"));
 router.use("/documents", require("./document.route"));
