@@ -168,6 +168,63 @@ module.exports = {
     }
   },
 
+  readMany: async (req, res, next) => {
+    try {
+      let baseFilters;
+
+      if (req.user.role === "admin" || req.user.role === "manager") {
+        baseFilters = { isDeleted: false };
+      } else if (req.user.role === "staff") {
+        baseFilters = {
+          isDeleted: false,
+          $or: [
+            { primaryAttorney: req.user.id },
+            { "team.user": req.user.id },
+            { permittedUsers: req.user.id },
+          ],
+        };
+      } else {
+        baseFilters = { _id: null };
+      }
+
+      const matters = await req.queryHandler(
+        Matter,
+        [
+          { path: "client" },
+          {
+            path: "primaryAttorney",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "team.user",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "invoices",
+            select: "invoiceNumber status totalAmount balanceDue",
+          },
+          {
+            path: "notes.author",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "notes.attachments",
+          },
+          {
+            path: "notes.permittedUsers",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+        ],
+        ["title", "practiceArea", "matterNumber", "description"],
+        baseFilters
+      );
+
+      res.status(200).json(matters);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   readOne: async (req, res, next) => {
     try {
       const matter = await Matter.findOne({
