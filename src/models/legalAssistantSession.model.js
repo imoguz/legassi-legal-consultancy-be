@@ -2,7 +2,7 @@
 
 const { Schema, model } = require("mongoose");
 
-const aiSessionSchema = new Schema(
+const legalAssistantSessionSchema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -17,13 +17,8 @@ const aiSessionSchema = new Schema(
     conversationId: {
       type: String,
       index: true,
+      sparse: true,
     },
-    documentIds: [
-      {
-        type: String,
-        default: [],
-      },
-    ],
     lastInteractionAt: {
       type: Date,
       default: () => Date.now(),
@@ -34,9 +29,13 @@ const aiSessionSchema = new Schema(
     },
   },
   {
-    collection: "ai_sessions",
+    collection: "legalAssistantSessions",
     timestamps: true,
   }
 );
 
-module.exports = model("AiSession", aiSessionSchema);
+// Indexes for performance
+legalAssistantSessionSchema.index({ conversationId: 1 });
+legalAssistantSessionSchema.index({ user: 1, lastInteractionAt: -1 });
+
+module.exports = model("LegalAssistantSession", legalAssistantSessionSchema);

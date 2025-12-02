@@ -1,3 +1,5 @@
+"use strict";
+
 const router = require("express").Router();
 const jwtVerification = require("../middlewares/jwt.verification");
 const requirePermission = require("../middlewares/requirePermission");
@@ -10,17 +12,22 @@ const {
   purge,
   getTasksByMatter,
   getMatters,
+  getTaskStats,
 } = require("../controllers/task.controller");
+const { multipleFiles } = require("../middlewares/multer");
 
 // JWT Verification for all routes
 router.use(jwtVerification);
 
 router
   .route("/")
-  .post(requirePermission("CREATE_TASK"), create)
+  .post(requirePermission("CREATE_TASK"), multipleFiles("files", 5), create)
   .get(requirePermission("LIST_TASKS"), readMany);
 
 router.get("/matters", requirePermission("LIST_MATTERS"), getMatters);
+
+router.get("/stats", requirePermission("LIST_TASKS"), getTaskStats);
+
 router.get(
   "/matters/:matterId",
   requirePermission("LIST_TASKS"),
@@ -30,7 +37,7 @@ router.get(
 router
   .route("/:id")
   .get(requirePermission("VIEW_TASK"), readOne)
-  .put(requirePermission("UPDATE_TASK"), update)
+  .put(requirePermission("UPDATE_TASK"), multipleFiles("files", 5), update)
   .delete(requirePermission("DELETE_TASK"), _delete);
 
 router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);

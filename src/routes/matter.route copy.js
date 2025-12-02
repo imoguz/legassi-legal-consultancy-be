@@ -1,8 +1,8 @@
+"use strict";
+
 const router = require("express").Router();
-const { singleFile } = require("../middlewares/multer");
 const jwtVerification = require("../middlewares/jwt.verification");
 const requirePermission = require("../middlewares/requirePermission");
-
 const {
   create,
   readMany,
@@ -10,25 +10,21 @@ const {
   update,
   _delete,
   purge,
-} = require("../controllers/document.controller");
+} = require("../controllers/matter.controller");
 
 // JWT Verification for all routes
 router.use(jwtVerification);
 
-router.post(
-  "/",
-  requirePermission("CREATE_DOCUMENT"),
-  singleFile("file"),
-  create
-);
-
-router.get("/", requirePermission("LIST_DOCUMENTS"), readMany);
+router
+  .route("/")
+  .post(requirePermission("CREATE_MATTER"), create)
+  .get(requirePermission("LIST_MATTERS"), readMany);
 
 router
   .route("/:id")
-  .get(requirePermission("VIEW_DOCUMENT"), readOne)
-  .put(requirePermission("UPDATE_DOCUMENT"), update)
-  .delete(requirePermission("DELETE_DOCUMENT"), _delete);
+  .get(requirePermission("VIEW_MATTER"), readOne)
+  .put(requirePermission("UPDATE_MATTER"), update)
+  .delete(requirePermission("DELETE_MATTER"), _delete);
 
 router.delete("/purge/:id", requirePermission("PURGE_RECORD"), purge);
 

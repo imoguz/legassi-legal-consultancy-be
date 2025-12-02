@@ -1,6 +1,7 @@
 "use strict";
 
 const Contact = require("../models/contact.model");
+const { createAuditLog } = require("../helpers/audit.helper");
 
 module.exports = {
   create: async (req, res) => {

@@ -11,71 +11,7 @@ const { uploadToCloudinaryBuffer } = require("../helpers/cloudinary");
 const Document = require("../models/document.model");
 const mongoose = require("mongoose");
 
-// Yardımcı fonksiyonlar
-const handleFileUpload = async (files, matterId, userId) => {
-  const documentIds = [];
-
-  for (const file of files) {
-    try {
-      const uploadResult = await uploadToCloudinaryBuffer(
-        file.buffer,
-        file.originalname
-      );
-
-      const document = await Document.create({
-        filename: file.originalname,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
-        url: uploadResult.secure_url,
-        publicId: uploadResult.public_id,
-        uploadedBy: userId,
-        matter: matterId,
-      });
-
-      documentIds.push(document._id);
-    } catch (fileError) {
-      console.error("File upload error:", fileError);
-      continue;
-    }
-  }
-
-  return documentIds;
-};
-
-const validateNoteAuthorization = (matter, note, userId, userRole) => {
-  // Matter authorization
-  const isMatterAuthorized =
-    userRole === "admin" ||
-    userRole === "manager" ||
-    matter.primaryAttorney.toString() === userId;
-
-  if (!isMatterAuthorized) {
-    throw new Error(
-      "You are not authorized to perform this action on the matter."
-    );
-  }
-
-  // Note authorization for existing notes
-  if (
-    note &&
-    note.author.toString() !== userId &&
-    userRole !== "admin" &&
-    userRole !== "manager"
-  ) {
-    throw new Error("You are not authorized to modify this note.");
-  }
-};
-
-const getNotificationRecipients = (matter) => {
-  return [matter.primaryAttorney, ...matter.team.map((tm) => tm.user)].filter(
-    (recipient, index, self) =>
-      self.findIndex((r) => r.toString() === recipient.toString()) === index
-  );
-};
-
 module.exports = {
-  // Matter CRUD operations (unchanged)
   create: async (req, res, next) => {
     try {
       const {
@@ -92,7 +28,7 @@ module.exports = {
         opposingParties = [],
         dates,
         billing,
-        visibility,
+        confidentiality,
         permittedUsers = [],
       } = req.body;
 
@@ -131,7 +67,7 @@ module.exports = {
         },
         billing: billing || { billingModel: "hourly", currency: "USD" },
         team,
-        visibility: visibility || "internal",
+        confidentiality: confidentiality || "private",
         permittedUsers,
         createdBy: req.user.id,
       });
@@ -148,7 +84,13 @@ module.exports = {
       });
 
       // Notification
-      const recipients = getNotificationRecipients(newMatter);
+      const recipients = [
+        newMatter.primaryAttorney,
+        ...newMatter.team.map((tm) => tm.user),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
 
       await notifyUsers({
         recipients,
@@ -163,6 +105,60 @@ module.exports = {
       });
 
       res.status(201).json(newMatter);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  readMany: async (req, res, next) => {
+    try {
+      let baseFilters;
+
+      if (req.user.role === "admin" || req.user.role === "manager") {
+        baseFilters = { isDeleted: false };
+      } else if (req.user.role === "staff") {
+        baseFilters = {
+          isDeleted: false,
+          $or: [
+            { primaryAttorney: req.user.id },
+            { "team.user": req.user.id },
+            { permittedUsers: req.user.id },
+          ],
+        };
+      } else {
+        baseFilters = { _id: null };
+      }
+
+      const matters = await req.queryHandler(
+        Matter,
+        [
+          { path: "client" },
+          {
+            path: "primaryAttorney",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "team.user",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "invoices",
+            select: "invoiceNumber status totalAmount balanceDue",
+          },
+          {
+            path: "notes.author",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "notes.attachments",
+            // select: "_id firstname lastname email role position profileUrl",
+          },
+        ],
+        ["title", "practiceArea", "matterNumber", "description"],
+        baseFilters
+      );
+
+      res.status(200).json(matters);
     } catch (err) {
       next(err);
     }
@@ -187,31 +183,12 @@ module.exports = {
           path: "notes.author",
           select: "_id firstname lastname email role position profileUrl",
         })
-        .populate({
-          path: "notes.permittedUsers",
-          select: "_id firstname lastname email role position profileUrl",
-        })
         .populate(
           "invoices",
           "invoiceNumber status issueDate dueDate totalAmount balanceDue"
         )
         .populate("payments", "paymentDate amount paymentMethod reference")
-        .populate("notes.attachments")
-        .populate({
-          path: "tasks",
-          match: { isDeleted: false },
-          select: "_id title description status priority dueDate assignees",
-          populate: [
-            {
-              path: "assignees.user",
-              select: "_id firstname lastname email position profileUrl",
-            },
-            {
-              path: "createdBy",
-              select: "_id firstname lastname",
-            },
-          ],
-        });
+        .populate("notes.attachments");
 
       if (!matter) return res.status(404).send("Matter not found.");
 
@@ -293,7 +270,13 @@ module.exports = {
       });
 
       // Notification
-      const recipients = getNotificationRecipients(matter);
+      const recipients = [
+        matter.primaryAttorney,
+        ...matter.team.map((tm) => tm.user),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
 
       await notifyUsers({
         recipients,
@@ -374,7 +357,13 @@ module.exports = {
       });
 
       // Notification
-      const recipients = getNotificationRecipients(matter);
+      const recipients = [
+        matter.primaryAttorney,
+        ...matter.team.map((tm) => tm.user),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
 
       await notifyUsers({
         recipients,
@@ -442,7 +431,13 @@ module.exports = {
       await Matter.deleteOne({ _id: req.params.id });
 
       // Notification (only admin)
-      const recipients = getNotificationRecipients(matter);
+      const recipients = [
+        matter.primaryAttorney,
+        ...matter.team.map((tm) => tm.user),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
 
       await notifyUsers({
         recipients,
@@ -464,7 +459,7 @@ module.exports = {
     }
   },
 
-  // Financial methods (unchanged)
+  // Yeni finansal metodlar
   getFinancialSummary: async (req, res, next) => {
     try {
       const summary = await FinancialService.getMatterFinancialSummary(
@@ -494,19 +489,13 @@ module.exports = {
     }
   },
 
-  // UPDATED NOTE OPERATIONS
   addNote: async (req, res, next) => {
     const session = await Matter.startSession();
     session.startTransaction();
 
     try {
       const { matterId } = req.params;
-      const {
-        contentHtml,
-        visibility = "internal",
-        pinned = false,
-        permittedUsers = [],
-      } = req.body;
+      const { contentHtml, visibility, pinned } = req.body;
       const files = req.files || [];
 
       const matter = await Matter.findById(matterId).session(session);
@@ -516,38 +505,69 @@ module.exports = {
       }
 
       // Authorization check
-      validateNoteAuthorization(matter, null, req.user.id, req.user.role);
+      const isAuthorized =
+        req.user.role === "admin" ||
+        req.user.role === "manager" ||
+        matter.primaryAttorney.toString() === req.user.id;
 
-      // Handle file uploads
-      const documentIds = await handleFileUpload(files, matterId, req.user.id);
+      if (!isAuthorized) {
+        await session.abortTransaction();
+        return res
+          .status(403)
+          .send("You are not authorized to add notes to this matter.");
+      }
 
-      // Create new note with updated structure
+      // 1. Dosyaları Cloudinary'e yükle ve document kaydı oluştur
+      const documentIds = [];
+      for (const file of files) {
+        try {
+          const uploadResult = await uploadToCloudinaryBuffer(
+            file.buffer,
+            file.originalname
+          );
+
+          const document = await Document.create(
+            [
+              {
+                filename: file.originalname,
+                originalName: file.originalname,
+                mimeType: file.mimetype,
+                size: file.size,
+                url: uploadResult.secure_url,
+                publicId: uploadResult.public_id,
+                uploadedBy: req.user.id,
+                matter: matterId,
+              },
+            ],
+            { session }
+          );
+
+          documentIds.push(document[0]._id);
+        } catch (fileError) {
+          console.error("File upload error:", fileError);
+          // Bir dosya hatası diğerlerini engellemesin
+          continue;
+        }
+      }
+
+      // 2. Note'u oluştur
       const newNote = {
         author: req.user.id,
         contentHtml,
-        visibility,
-        pinned,
-        permittedUsers: visibility === "restricted" ? permittedUsers : [],
-        attachments: documentIds,
+        visibility: visibility || "internal",
+        pinned: pinned || false,
+        attachments: documentIds, // Oluşturulan document ID'leri
       };
 
       matter.notes.push(newNote);
       await matter.save({ session });
 
       // Populate the newly added note
-      await matter.populate([
-        {
-          path: "notes.author",
-          select: "_id firstname lastname email profileUrl",
-        },
-        {
-          path: "notes.permittedUsers",
-          select: "_id firstname lastname email profileUrl",
-        },
-        {
-          path: "notes.attachments",
-        },
-      ]);
+      await matter.populate(
+        "notes.author",
+        "firstname lastname email profileUrl"
+      );
+      await matter.populate("notes.attachments");
 
       const createdNote = matter.notes[matter.notes.length - 1];
 
@@ -566,7 +586,13 @@ module.exports = {
       const currentUser = await User.findById(req.user.id).select(
         "firstname lastname email"
       );
-      const recipients = getNotificationRecipients(matter);
+      const recipients = [
+        matter.primaryAttorney,
+        ...matter.team.map((tm) => tm.user),
+      ].filter(
+        (recipient, index, self) =>
+          self.findIndex((r) => r.toString() === recipient.toString()) === index
+      );
 
       await notifyUsers({
         recipients,
@@ -591,48 +617,20 @@ module.exports = {
     }
   },
 
+  // matter.controller.js - updateNote fonksiyonu (transaction'sız versiyon)
   updateNote: async (req, res, next) => {
     try {
       const { matterId, noteId } = req.params;
-      const {
-        contentHtml,
-        visibility,
-        pinned,
-        deletedAttachments,
-        permittedUsers = [],
-      } = req.body;
+      const { contentHtml, visibility, pinned, deletedAttachments } = req.body;
       const files = req.files || [];
 
       console.log("=== UPDATE NOTE DEBUG ===");
       console.log("matterId:", matterId);
       console.log("noteId:", noteId);
-      console.log("Visibility:", visibility);
-      console.log("PermittedUsers:", permittedUsers);
-      console.log("deletedAttachments:", deletedAttachments);
+      console.log("deletedAttachments from body:", deletedAttachments);
       console.log("files count:", files.length);
 
-      const matter = await Matter.findById(matterId);
-      if (!matter) {
-        return res.status(404).send("Matter not found.");
-      }
-
-      const note = matter.notes.id(noteId);
-      if (!note) {
-        return res.status(404).send("Note not found.");
-      }
-
-      // Authorization check
-      validateNoteAuthorization(matter, note, req.user.id, req.user.role);
-
-      const previousValues = {
-        contentHtml: note.contentHtml,
-        visibility: note.visibility,
-        pinned: note.pinned,
-        permittedUsers: [...(note.permittedUsers || [])],
-        attachments: [...note.attachments],
-      };
-
-      // Process deleted attachments
+      // deletedAttachments'ı güvenli şekilde işle
       let deletedAttachmentIds = [];
       if (deletedAttachments && deletedAttachments !== "[]") {
         if (Array.isArray(deletedAttachments)) {
@@ -655,47 +653,103 @@ module.exports = {
 
       console.log("Processed deletedAttachmentIds:", deletedAttachmentIds);
 
-      // Remove attachments from note
+      const matter = await Matter.findById(matterId);
+      if (!matter) {
+        return res.status(404).send("Matter not found.");
+      }
+
+      const note = matter.notes.id(noteId);
+      if (!note) {
+        return res.status(404).send("Note not found.");
+      }
+
+      console.log("Current note attachments:", note.attachments);
+
+      // Authorization check
+      const isAuthorized =
+        req.user.role === "admin" ||
+        req.user.role === "manager" ||
+        note.author.toString() === req.user.id;
+
+      if (!isAuthorized) {
+        return res
+          .status(403)
+          .send("You are not authorized to edit this note.");
+      }
+
+      const previousValues = {
+        contentHtml: note.contentHtml,
+        visibility: note.visibility,
+        pinned: note.pinned,
+        attachments: [...note.attachments],
+      };
+
+      // 1. ÖNCE note'dan attachments'ı kaldır
       if (deletedAttachmentIds.length > 0) {
+        console.log("Removing attachments from note:", deletedAttachmentIds);
+
+        // Note'dan attachment'ları kaldır
         note.attachments = note.attachments.filter(
           (attachmentId) =>
             !deletedAttachmentIds.includes(attachmentId.toString())
         );
+
+        console.log("Note attachments after removal:", note.attachments);
       }
 
-      // Upload new files
-      const newDocumentIds = await handleFileUpload(
-        files,
-        matterId,
-        req.user.id
-      );
-      if (newDocumentIds.length > 0) {
-        note.attachments.push(...newDocumentIds);
-      }
+      // 2. Yeni dosyaları Cloudinary'e yükle ve document kaydı oluştur
+      const newDocumentIds = [];
+      for (const file of files) {
+        try {
+          const uploadResult = await uploadToCloudinaryBuffer(
+            file.buffer,
+            file.originalname
+          );
 
-      // Update note fields
-      if (contentHtml !== undefined) note.contentHtml = contentHtml;
-      if (visibility !== undefined) {
-        note.visibility = visibility;
-        // Reset permittedUsers if visibility is not restricted
-        if (visibility !== "restricted") {
-          note.permittedUsers = [];
+          const document = await Document.create({
+            filename: file.originalname,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            url: uploadResult.secure_url,
+            publicId: uploadResult.public_id,
+            uploadedBy: req.user.id,
+            matter: matterId,
+          });
+
+          newDocumentIds.push(document._id);
+          console.log(
+            "Uploaded new file:",
+            file.originalname,
+            "ID:",
+            document._id
+          );
+        } catch (fileError) {
+          console.error("File upload error:", fileError);
+          continue;
         }
       }
-      if (pinned !== undefined) note.pinned = pinned;
 
-      // Update permittedUsers for restricted visibility
-      if (visibility === "restricted" && permittedUsers) {
-        note.permittedUsers = permittedUsers;
+      // 3. Yeni document ID'lerini note'a ekle
+      if (newDocumentIds.length > 0) {
+        note.attachments.push(...newDocumentIds);
+        console.log("Added new attachments:", newDocumentIds);
       }
+
+      // 4. Diğer note alanlarını güncelle
+      if (contentHtml !== undefined) note.contentHtml = contentHtml;
+      if (visibility !== undefined) note.visibility = visibility;
+      if (pinned !== undefined) note.pinned = pinned;
 
       note.modifiedBy = req.user.id;
       note.updatedAt = new Date();
 
-      // Save matter
+      console.log("Saving matter with updated note...");
+
+      // Matter'ı kaydet
       await matter.save();
 
-      // Delete removed documents from database
+      // 5. SONRA silinen document'leri veritabanından kaldır
       if (deletedAttachmentIds.length > 0) {
         const deleteResult = await Document.deleteMany({
           _id: { $in: deletedAttachmentIds },
@@ -703,26 +757,19 @@ module.exports = {
         console.log("Documents deleted from DB:", deleteResult);
       }
 
-      // Populate updated note
-      await matter.populate([
-        {
-          path: "notes.author",
-          select: "_id firstname lastname email profileUrl",
-        },
-        {
-          path: "notes.modifiedBy",
-          select: "_id firstname lastname email profileUrl",
-        },
-        {
-          path: "notes.permittedUsers",
-          select: "_id firstname lastname email profileUrl",
-        },
-        {
-          path: "notes.attachments",
-        },
-      ]);
+      // Populate the updated note
+      await matter.populate(
+        "notes.author",
+        "firstname lastname email profileUrl"
+      );
+      await matter.populate(
+        "notes.modifiedBy",
+        "firstname lastname email profileUrl"
+      );
+      await matter.populate("notes.attachments");
 
       const updatedNote = matter.notes.id(noteId);
+      console.log("Final note attachments:", updatedNote.attachments);
 
       // Audit log
       await createAuditLog({
@@ -742,7 +789,6 @@ module.exports = {
       next(err);
     }
   },
-
   deleteNote: async (req, res, next) => {
     try {
       const { matterId, noteId } = req.params;
@@ -757,8 +803,17 @@ module.exports = {
         return res.status(404).send("Note not found.");
       }
 
-      // Authorization check
-      validateNoteAuthorization(matter, note, req.user.id, req.user.role);
+      // Authorization check - only author, admin, or manager can delete
+      const isAuthorized =
+        req.user.role === "admin" ||
+        req.user.role === "manager" ||
+        note.author.toString() === req.user.id;
+
+      if (!isAuthorized) {
+        return res
+          .status(403)
+          .send("You are not authorized to delete this note.");
+      }
 
       const deletedNote = note.toObject();
 

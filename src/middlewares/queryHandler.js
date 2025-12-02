@@ -18,26 +18,6 @@ const createQueryHandler = () => {
       const order = req.query.sortOrder || DEFAULT_ORDER;
       const search = req.query.search ? req.query.search.trim() : null;
 
-      // Copy all query params into filters except known meta keys
-      const filters = { ...req.query };
-      delete filters.page;
-      delete filters.limit;
-      delete filters.sortBy;
-      delete filters.sortOrder;
-      delete filters.search;
-
-      // Convert boolean strings to actual booleans
-      Object.keys(filters).forEach((key) => {
-        if (Array.isArray(filters[key])) {
-          filters[key] = filters[key].map((v) =>
-            v === "true" ? true : v === "false" ? false : v
-          );
-        } else {
-          if (filters[key] === "true") filters[key] = true;
-          if (filters[key] === "false") filters[key] = false;
-        }
-      });
-
       // Build sort object
       const sortFields = sort.split(",");
       const sortOrders = order.split(",");
@@ -52,10 +32,38 @@ const createQueryHandler = () => {
         Model,
         populateOptions = null,
         searchFields = [],
-        extraFilters = {}
+        customFilterHandler = null
       ) => {
-        // Merge base filters with query filters
-        const finalFilters = { ...extraFilters, ...filters };
+        // Extract all filters from query
+        const queryFilters = {};
+        const metaKeys = ["page", "limit", "sortBy", "sortOrder", "search"];
+
+        Object.keys(req.query).forEach((key) => {
+          if (
+            !metaKeys.includes(key) &&
+            req.query[key] !== undefined &&
+            req.query[key] !== ""
+          ) {
+            queryFilters[key] = req.query[key];
+          }
+        });
+
+        // Apply custom filter handler
+        let finalFilters = {};
+        if (customFilterHandler && typeof customFilterHandler === "function") {
+          finalFilters = await customFilterHandler(queryFilters, req);
+        } else {
+          // Convert array values to $in
+          finalFilters = queryFilters;
+          Object.keys(finalFilters).forEach((key) => {
+            if (
+              Array.isArray(finalFilters[key]) &&
+              finalFilters[key].length > 0
+            ) {
+              finalFilters[key] = { $in: finalFilters[key] };
+            }
+          });
+        }
 
         // Build base query with filters
         const query = Model.find(finalFilters);

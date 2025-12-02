@@ -1,6 +1,6 @@
 "use strict";
 
-const Document = require("../models/document.model");
+const Document = require("../models/docLibrary.model");
 const {
   uploadToCloudinaryBuffer,
   deleteFromCloudinary,

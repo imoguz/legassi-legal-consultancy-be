@@ -44,13 +44,13 @@ const userSchema = new Schema(
 
     role: {
       type: String,
-      enum: ["admin", "manager", "staff", "client"],
+      enum: ["owner", "admin", "staff", "contractor", "client"],
       default: "client",
     },
 
     position: {
       type: String,
-      enum: ["lawyer", "assistant", "paralegal", "intern"],
+      enum: ["attorney", "partner", "paralegal", "assistant", "intern", null],
       default: null,
       validate: {
         validator: function (value) {
@@ -143,10 +143,10 @@ userSchema.methods.comparePassword = async function (plainPassword) {
 userSchema.methods.canReceiveNotification = function (type, priority) {
   if (!this.notificationPreferences.inApp) return false;
 
-  // Tip kontrolü
+  // Ttype check
   if (this.notificationPreferences.types[type] === false) return false;
 
-  // Öncelik kontrolü
+  // Priority check
   if (this.notificationPreferences.priorities[priority] === false) return false;
 
   return true;

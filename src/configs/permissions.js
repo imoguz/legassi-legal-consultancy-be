@@ -25,6 +25,18 @@ const PERMISSIONS = {
   UPDATE_MATTER: ["admin", "manager", "staff"],
   LIST_MATTERS: ["admin", "manager", "staff"],
   DELETE_MATTER: ["admin"],
+  //payment
+  CREATE_PAYMENT: ["admin", "manager", "staff"],
+  VIEW_PAYMENT: ["admin", "manager", "staff"],
+  UPDATE_PAYMENT: ["admin", "manager", "staff"],
+  LIST_PAYMENTS: ["admin", "manager", "staff"],
+  DELETE_PAYMENT: ["admin"],
+  //invoice
+  CREATE_INVOICE: ["admin", "manager", "staff"],
+  VIEW_INVOICE: ["admin", "manager", "staff"],
+  UPDATE_INVOICE: ["admin", "manager", "staff"],
+  LIST_INVOICES: ["admin", "manager", "staff"],
+  DELETE_INVOICE: ["admin"],
 
   // Purge
   PURGE_RECORD: ["admin"],

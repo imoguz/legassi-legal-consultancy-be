@@ -1,83 +1,20 @@
+// models/document.model.js
 const { Schema, model } = require("mongoose");
-const allCategories = [
-  // Litigation
-  "Pleadings",
-  "Motions",
-  "Court Decisions",
-  "Evidence",
-  "Transcripts",
-  "Affidavits",
-  "Correspondence",
-  "Notices",
-  "Litigation Files",
-  // General
-  "Contracts",
-  "Agreements",
-  "Regulations",
-  "Legal Opinions",
-  "Corporate Documents",
-  "Intellectual Property",
-  "Employment Documents",
-  "Financial Documents",
-  "Compliance Documents",
-  "Law Books",
-  "Miscellaneous",
-  "Other",
-];
 
-const documentSchema = new Schema(
+const DocumentSchema = new Schema(
   {
-    title: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    category: {
-      type: String,
-      enum: allCategories,
-      required: true,
-    },
-    documentType: {
-      type: String,
-      enum: ["public", "private"],
-      required: true,
-      default: "public",
-    },
-    fileUrl: {
-      type: String,
-      required: true,
-    },
-    fileSize: {
-      type: String,
-    },
-    fileType: {
-      type: String,
-    },
-    cloudinaryId: {
-      type: String,
-      required: true,
-    },
-    uploadedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    matterId: {
-      type: Schema.Types.ObjectId,
-      ref: "Matter",
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
+    filename: { type: String, required: true },
+    originalName: { type: String, required: true },
+    mimeType: { type: String, required: true },
+    size: { type: Number, required: true },
+    url: { type: String, required: true },
+    publicId: { type: String, required: true }, // Cloudinary public ID
+    uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    matter: { type: Schema.Types.ObjectId, ref: "Matter" },
+    note: { type: Schema.Types.ObjectId, ref: "Matter.notes" },
+    isDeleted: { type: Boolean, default: false },
   },
-  {
-    timestamps: true,
-    collection: "documents",
-  }
+  { timestamps: true }
 );
 
-module.exports = model("Document", documentSchema);
+module.exports = model("Document", DocumentSchema);
