@@ -53,9 +53,6 @@ module.exports = {
       const accessToken = signAccessToken(payload);
       const refreshToken = signRefreshToken({ id: user._id.toString() });
 
-      // Set refresh token cookie
-      setRefreshCookie(res, refreshToken);
-
       // User object
       const userSafe = {
         id: user._id,
@@ -69,6 +66,7 @@ module.exports = {
 
       return res.json({
         accessToken,
+        refreshToken,
         user: userSafe,
       });
     } catch (err) {
@@ -105,7 +103,7 @@ module.exports = {
 
   refreshToken: async (req, res) => {
     try {
-      const refreshToken = req.cookies?.refreshToken;
+      const { refreshToken } = req.body;
       if (!refreshToken) {
         return res.status(401).json({ error: "Refresh token missing." });
       }
@@ -130,14 +128,12 @@ module.exports = {
         return res.status(401).json({ error: "User invalid." });
       }
 
-      // Rotation: blacklist old refresh token
+      // Blacklist old refresh token
       await blacklistToken(refreshToken);
 
       const newPayload = { id: user._id.toString(), role: user.role };
       const newAccessToken = signAccessToken(newPayload);
       const newRefreshToken = signRefreshToken({ id: user._id.toString() });
-
-      setRefreshCookie(res, newRefreshToken);
 
       // Return new access token and user
       const userSafe = {
@@ -152,6 +148,7 @@ module.exports = {
 
       return res.json({
         accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
         user: userSafe,
       });
     } catch (err) {
@@ -178,7 +175,6 @@ module.exports = {
         // If invalid token, still clear cookie
       }
 
-      clearRefreshCookie(res);
       return res.json({ message: "Logged out successfully." });
     } catch (err) {
       console.error("logout error:", err);
