@@ -15,8 +15,8 @@ const { sendEmail, resetPasswordTemplate } = require("../helpers/sendEmail");
 function setRefreshCookie(res, token) {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === "true",
-    sameSite: process.env.COOKIE_SAME_SITE || "strict",
+    secure: true,
+    sameSite: "none",
     maxAge: 30 * 24 * 60 * 60 * 1000,
     path: "/",
   };
