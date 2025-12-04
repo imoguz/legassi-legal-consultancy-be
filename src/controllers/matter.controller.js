@@ -11,7 +11,7 @@ const { uploadToCloudinaryBuffer } = require("../helpers/cloudinary");
 const Document = require("../models/document.model");
 const mongoose = require("mongoose");
 
-// Yardımcı fonksiyonlar
+// YHelper functions
 const handleFileUpload = async (files, matterId, userId) => {
   const documentIds = [];
 

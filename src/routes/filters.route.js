@@ -1,4 +1,3 @@
-// routes/filters.routes.js
 "use strict";
 
 const router = require("express").Router();
@@ -9,7 +8,7 @@ const { getTaskFilters } = require("../controllers/filters.controller");
 // JWT Verification for all routes
 router.use(jwtVerification);
 
-// Task filtreleri
+// Task filters
 router.get("/tasks", requirePermission("LIST_TASKS"), getTaskFilters);
 
 module.exports = router;

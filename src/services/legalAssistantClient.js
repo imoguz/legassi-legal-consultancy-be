@@ -16,7 +16,7 @@ const aiClient = axios.create({
   },
 });
 
-// Health check - BASİT
+// Health check
 const healthCheck = async () => {
   try {
     const response = await aiClient.get("/api/v1/health");
@@ -32,7 +32,7 @@ const healthCheck = async () => {
   }
 };
 
-// Send prompt stream - BASİT
+// Send prompt stream
 const sendPromptStream = async (promptData, onData, onEnd) => {
   try {
     const response = await aiClient({
@@ -74,7 +74,7 @@ const sendPromptStream = async (promptData, onData, onEnd) => {
   }
 };
 
-// Export conversations - BASİT
+// Export conversations
 const exportConversations = async (conversationIds) => {
   try {
     const response = await aiClient.post("/api/v1/conversations/export", {

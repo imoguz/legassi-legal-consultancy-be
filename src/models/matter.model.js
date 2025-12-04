@@ -5,8 +5,7 @@ const { Schema, model, Types } = require("mongoose");
 // Money rounding
 const roundMoney = (value) => Math.round(value * 100) / 100;
 
-/* ----- Sub Schemas ----- */
-
+//  Sub Schemas
 const TeamMemberSchema = new Schema(
   {
     user: { type: Types.ObjectId, ref: "User", required: true },
@@ -103,8 +102,7 @@ const MatterNoteSchema = new Schema(
   { timestamps: true }
 );
 
-/* ----- Main Schema ----- */
-
+// Main Schema
 const MatterSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
@@ -183,12 +181,12 @@ const MatterSchema = new Schema(
   { timestamps: true }
 );
 
-/* ----- Indexes ----- */
+// Indexes
 MatterSchema.index({ "dates.deadline": 1 });
 MatterSchema.index({ client: 1, status: 1 });
 MatterSchema.index({ primaryAttorney: 1, status: 1 });
 
-/* ----- Methods ----- */
+// Methods
 MatterSchema.methods.updateFinancials = async function (session = null) {
   const Invoice = model("Invoice");
   const Payment = model("Payment");

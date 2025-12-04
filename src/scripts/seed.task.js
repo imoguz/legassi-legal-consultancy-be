@@ -5,14 +5,14 @@ const dayjs = require("dayjs");
 const Task = require("../models/task.model");
 require("dotenv").config();
 
-// MongoDB bağlantısı
+// MongoDB connection
 const MONGO_URI = process.env.MONGODB;
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Kullanılacak User Id’leri
+// User Ids
 const userIds = [
   "683199ea0c0715b42e646395",
   "687d65e5d02427d8a3b7680e",
@@ -21,7 +21,7 @@ const userIds = [
   "68a581c1adcb80183df8ed82",
 ];
 
-// Matters
+// Matter IDs
 const matterIds = [
   "69190e3b7dc69e56124970ab",
   "692ec07801198627ae877e92",
@@ -34,7 +34,7 @@ const matterIds = [
   "692ec07801198627ae877e9b",
 ];
 
-// Helper: rastgele assignees
+// Random assignees
 const generateAssignees = () => {
   const shuffled = userIds.sort(() => 0.5 - Math.random());
   return shuffled.slice(0, 2).map((id) => ({
@@ -43,18 +43,18 @@ const generateAssignees = () => {
   }));
 };
 
-// Helper: rastgele seçim
+// Random selection
 const randomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-// Helper: rastgele tarih
+// Random date
 const randomDate = (start, end) =>
   new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 
-// Task oluştur
+// Create Task
 const generateTask = () => ({
   matter: randomItem(matterIds),
   title: `Test Task ${Math.floor(Math.random() * 1000)}`,
-  description: "Bu bir test kaydıdır.",
+  description: "This is a test record.",
   assignees: Math.random() > 0.5 ? generateAssignees() : [],
   dueDate: randomDate(new Date(), dayjs().add(2, "month").toDate()),
   status: randomItem([
@@ -77,7 +77,7 @@ const generateTask = () => ({
   actualMinutes: Math.floor(Math.random() * 120),
 });
 
-// 50 task ekle
+// Added 50 tasks
 const seedTasks = async () => {
   try {
     const tasks = [];
@@ -86,13 +86,12 @@ const seedTasks = async () => {
     }
 
     await Task.insertMany(tasks);
-    console.log("50 test task başarıyla eklendi!");
+    console.log("50 task added successfully!");
     mongoose.connection.close();
   } catch (err) {
-    console.error("Hata:", err);
+    console.error("Error:", err);
     mongoose.connection.close();
   }
 };
 
-// Çalıştır
 seedTasks();

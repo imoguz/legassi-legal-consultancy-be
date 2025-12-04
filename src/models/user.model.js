@@ -44,13 +44,21 @@ const userSchema = new Schema(
 
     role: {
       type: String,
-      enum: ["owner", "admin", "staff", "contractor", "client"],
+      enum: ["owner", "admin", "staff", "assistant", "client"],
       default: "client",
     },
 
     position: {
       type: String,
-      enum: ["attorney", "partner", "paralegal", "assistant", "intern", null],
+      enum: [
+        "lawyer",
+        "paralegal",
+        "intern",
+        "accountant",
+        "assistant",
+        "manager",
+        null,
+      ],
       default: null,
       validate: {
         validator: function (value) {

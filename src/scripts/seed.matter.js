@@ -5,14 +5,14 @@ const dayjs = require("dayjs");
 const Matter = require("../models/matter.model");
 require("dotenv").config();
 
-// MongoDB bağlantısı
+// MongoDB
 const MONGO_URI = process.env.MONGODB;
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Kullanılacak User Id’leri
+// User Ids
 const userIds = [
   "683199ea0c0715b42e646395",
   "687d65e5d02427d8a3b7680e",
@@ -21,7 +21,7 @@ const userIds = [
   "68a581c1adcb80183df8ed82",
 ];
 
-// Kullanılacak Client Id’leri
+// Client Ids
 const clientIds = [
   "692ebe08757fb0ee12d30baf",
   "692ebdb7757fb0ee12d30ba8",
@@ -33,14 +33,14 @@ const clientIds = [
   "692ebbcd757fb0ee12d30b76",
 ];
 
-// Helper: rastgele seçim
+// Random select
 const randomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-// Helper: rastgele tarih
+// Random date
 const randomDate = (start, end) =>
   new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 
-// Helper: rastgele team member
+// Random team member
 const generateTeam = () => {
   const shuffled = userIds.sort(() => 0.5 - Math.random());
   const team = shuffled.slice(0, 2).map((id) => ({
@@ -52,7 +52,7 @@ const generateTeam = () => {
   return team;
 };
 
-// Matter oluştur
+// Create Matter
 const generateMatter = (index) => ({
   title: `Test Matter ${index + 1}`,
   description: "This is a test record",
@@ -94,7 +94,7 @@ const generateMatter = (index) => ({
   },
 });
 
-// 50 matter
+// 50 matters
 const seedMatters = async () => {
   try {
     const matters = [];

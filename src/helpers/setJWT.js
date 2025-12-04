@@ -37,13 +37,13 @@ module.exports = async ({ email, password, userId }, refreshToken = null) => {
       role: user.role,
     },
     process.env.ACCESS_KEY,
-    { expiresIn: "1d" }
+    { expiresIn: "15m" }
   );
 
   const newRefreshToken =
     refreshToken ||
     jwt.sign({ id: user._id }, process.env.REFRESH_KEY, {
-      expiresIn: "7d",
+      expiresIn: "15d",
     });
 
   return {

@@ -11,7 +11,7 @@ const chat = async (req, res) => {
     return res.status(400).json({ success: false, message: "Prompt required" });
   }
 
-  // Session kontrol
+  // Session control
   if (conversation_id) {
     const session = await LegalAssistantSession.findOne({
       conversationId: conversation_id,
@@ -40,7 +40,6 @@ const chat = async (req, res) => {
       prompt: prompt.trim(),
       conversationId: conversation_id,
       onData: (data) => {
-        // AI'dan geleni direkt forward et
         res.write(`data: ${JSON.stringify(data)}\n\n`);
 
         if (data.conversation_id) newConversationId = data.conversation_id;

@@ -1,71 +1,191 @@
 "use strict";
 
-const jwt = require("jsonwebtoken");
-const setJWT = require("../helpers/setJWT");
-const TokenBlacklist = require("../models/tokenBlacklist.model");
 const User = require("../models/user.model");
+const {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  blacklistToken,
+  isBlacklisted,
+} = require("../services/token.service");
+const TokenBlacklist = require("../models/tokenBlacklist.model");
 const { sendEmail, resetPasswordTemplate } = require("../helpers/sendEmail");
 
+// Cookie helper
+function setRefreshCookie(res, token) {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === "true",
+    sameSite: process.env.COOKIE_SAME_SITE || "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: "/",
+  };
+  res.cookie("refreshToken", token, cookieOptions);
+}
+
+function clearRefreshCookie(res) {
+  res.clearCookie("refreshToken", { path: "/" });
+}
+
 module.exports = {
-  /* Login controller */
   login: async (req, res) => {
     try {
-      const data = await setJWT(req.body);
-      res.send(data);
-    } catch (err) {
-      res.status(401).json({ error: err.message });
-    }
-  },
-
-  /* Refresh token controller */
-  refreshToken: async (req, res) => {
-    const refreshToken = req.body?.refreshToken;
-    if (!refreshToken) {
-      return res.status(400).send({ error: "Refresh token required." });
-    }
-
-    const isBlacklisted = await TokenBlacklist.findOne({ token: refreshToken });
-    if (isBlacklisted) {
-      return res.status(403).send({ error: "Token is blacklisted." });
-    }
-
-    jwt.verify(refreshToken, process.env.REFRESH_KEY, async (err, decoded) => {
-      if (err) {
-        return res.status(403).send({ error: "Invalid refresh token." });
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required." });
       }
 
-      try {
-        const data = await setJWT({ userId: decoded.id }, refreshToken);
-        res.send(data);
-      } catch (err) {
-        res.status(401).send({ error: err.message });
+      const user = await User.findOne({ email }).select("+password");
+      if (!user || !user.isActive) {
+        return res.status(401).json({ error: "Invalid credentials." });
       }
-    });
-  },
+      if (!user.isVerified) {
+        return res.status(403).json({ error: "Email not verified." });
+      }
 
-  /* Logout controller */
-  logout: async (req, res) => {
-    const refreshToken = req.body?.refreshToken;
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid credentials." });
+      }
 
-    if (!refreshToken) {
-      return res.status(400).send({ error: "Refresh token is required." });
-    }
+      // Create tokens
+      const payload = { id: user._id.toString(), role: user.role };
+      const accessToken = signAccessToken(payload);
+      const refreshToken = signRefreshToken({ id: user._id.toString() });
 
-    try {
-      const decoded = jwt.verify(refreshToken, process.env.REFRESH_KEY);
+      // Set refresh token cookie
+      setRefreshCookie(res, refreshToken);
 
-      await TokenBlacklist.create({
-        token: refreshToken,
-        expiresAt: new Date(decoded.exp * 1000),
+      // User object
+      const userSafe = {
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        profileUrl: user.profileUrl,
+        role: user.role,
+        position: user.position,
+      };
+
+      return res.json({
+        accessToken,
+        user: userSafe,
       });
-
-      res.send({ message: "Logged out successfully." });
     } catch (err) {
-      res.status(400).send({ error: "Invalid token." });
+      console.error("login error:", err);
+      return res.status(500).json({ error: "Something went wrong." });
     }
   },
 
-  /* Forgot password controller */
+  me: async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      const user = await User.findById(userId);
+      if (!user || !user.isActive || !user.isVerified) {
+        return res.status(401).json({ error: "User not valid." });
+      }
+
+      const userSafe = {
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        profileUrl: user.profileUrl,
+        role: user.role,
+        position: user.position,
+      };
+
+      return res.json({ user: userSafe });
+    } catch (err) {
+      console.error("me error:", err);
+      return res.status(500).json({ error: "Something went wrong." });
+    }
+  },
+
+  refreshToken: async (req, res) => {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      if (!refreshToken) {
+        return res.status(401).json({ error: "Refresh token missing." });
+      }
+
+      // Blacklist check
+      if (await isBlacklisted(refreshToken)) {
+        clearRefreshCookie(res);
+        return res.status(403).json({ error: "Refresh token revoked." });
+      }
+
+      let decoded;
+      try {
+        decoded = verifyRefreshToken(refreshToken);
+      } catch (err) {
+        clearRefreshCookie(res);
+        return res.status(401).json({ error: "Invalid refresh token." });
+      }
+
+      const user = await User.findById(decoded.id);
+      if (!user || !user.isActive || !user.isVerified) {
+        clearRefreshCookie(res);
+        return res.status(401).json({ error: "User invalid." });
+      }
+
+      // Rotation: blacklist old refresh token
+      await blacklistToken(refreshToken);
+
+      const newPayload = { id: user._id.toString(), role: user.role };
+      const newAccessToken = signAccessToken(newPayload);
+      const newRefreshToken = signRefreshToken({ id: user._id.toString() });
+
+      setRefreshCookie(res, newRefreshToken);
+
+      // Return new access token and user
+      const userSafe = {
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        profileUrl: user.profileUrl,
+        role: user.role,
+        position: user.position,
+      };
+
+      return res.json({
+        accessToken: newAccessToken,
+        user: userSafe,
+      });
+    } catch (err) {
+      console.error("refreshToken error:", err);
+      return res.status(500).json({ error: "Something went wrong." });
+    }
+  },
+
+  logout: async (req, res) => {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      if (!refreshToken) {
+        return res.status(400).json({ error: "Refresh token required." });
+      }
+
+      // Try verify so we can set expiresAt for blacklist
+      try {
+        const decoded = verifyRefreshToken(refreshToken);
+        await TokenBlacklist.create({
+          token: refreshToken,
+          expiresAt: new Date(decoded.exp * 1000),
+        });
+      } catch (err) {
+        // If invalid token, still clear cookie
+      }
+
+      clearRefreshCookie(res);
+      return res.json({ message: "Logged out successfully." });
+    } catch (err) {
+      console.error("logout error:", err);
+      return res.status(500).json({ error: "Something went wrong." });
+    }
+  },
+
   forgotPassword: async (req, res) => {
     const { email } = req.body;
 
@@ -99,11 +219,11 @@ module.exports = {
           "If an account with this email exists, a reset link has been sent.",
       });
     } catch (err) {
+      console.error("forgotPassword error:", err);
       res.status(500).json({ error: "Something went wrong." });
     }
   },
 
-  /* Reset password controller */
   resetPassword: async (req, res) => {
     const { token } = req.query;
     const { password } = req.body;
@@ -139,7 +259,7 @@ module.exports = {
       if (err.name === "TokenExpiredError") {
         return res.status(400).json({ error: "Reset link has expired." });
       }
-
+      console.error("resetPassword error:", err);
       res.status(400).json({ error: "Invalid or expired token." });
     }
   },
