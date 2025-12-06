@@ -1,6 +1,7 @@
 "use strict";
 
 const Task = require("../models/task.model");
+const Matter = require("../models/matter.model");
 
 module.exports = {
   getTaskFilters: async (req, res, next) => {
@@ -341,9 +342,270 @@ module.exports = {
 
   getMatterFilters: async (req, res, next) => {
     try {
+      // Security filters
+      let baseFilters = { isDeleted: false };
+
+      if (!["admin", "manager"].includes(req.user.role)) {
+        baseFilters.$or = [
+          { primaryAttorney: req.user.id },
+          { "team.user": req.user.id },
+          { permittedUsers: req.user.id },
+        ];
+      }
+
+      // Status
+      const statusAggregation = await Matter.aggregate([
+        { $match: baseFilters },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      const statusEnum = ["open", "active", "pending", "closed", "archived"];
+      const statusMap = {
+        open: "Open",
+        active: "Active",
+        pending: "Pending",
+        closed: "Closed",
+        archived: "Archived",
+      };
+
+      const statusOptions = statusEnum.map((status) => {
+        const aggItem = statusAggregation.find((item) => item._id === status);
+        const count = aggItem ? aggItem.count : 0;
+        return {
+          text: `${statusMap[status]} (${count})`,
+          value: status,
+        };
+      });
+
+      // Priority
+      const priorityAggregation = await Matter.aggregate([
+        { $match: baseFilters },
+        {
+          $group: {
+            _id: "$priority",
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      const priorityEnum = ["low", "medium", "high", "urgent"];
+      const priorityMap = {
+        low: "Low",
+        medium: "Medium",
+        high: "High",
+        urgent: "Urgent",
+      };
+
+      const priorityOptions = priorityEnum.map((priority) => {
+        const aggItem = priorityAggregation.find(
+          (item) => item._id === priority
+        );
+        const count = aggItem ? aggItem.count : 0;
+        return {
+          text: `${priorityMap[priority]} (${count})`,
+          value: priority,
+        };
+      });
+
+      // Primary Attorney
+      const attorneyAggregation = await Matter.aggregate([
+        { $match: baseFilters },
+        {
+          $lookup: {
+            from: "users",
+            let: { attorneyId: "$primaryAttorney" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$attorneyId"] },
+                  isActive: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  firstname: 1,
+                  lastname: 1,
+                  email: 1,
+                },
+              },
+            ],
+            as: "attorneyInfo",
+          },
+        },
+        { $unwind: "$attorneyInfo" },
+        {
+          $group: {
+            _id: "$primaryAttorney",
+            firstname: { $first: "$attorneyInfo.firstname" },
+            lastname: { $first: "$attorneyInfo.lastname" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { firstname: 1 } },
+        {
+          $project: {
+            _id: 0,
+            value: "$_id",
+            text: {
+              $concat: [
+                "$firstname",
+                " ",
+                "$lastname",
+                " (",
+                { $toString: "$count" },
+                ")",
+              ],
+            },
+          },
+        },
+      ]);
+
+      // Practice Area
+      const practiceAreaAggregation = await Matter.aggregate([
+        { $match: baseFilters },
+        { $match: { practiceArea: { $ne: null, $ne: "" } } },
+        {
+          $group: {
+            _id: "$practiceArea",
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      const practiceAreaOptions = practiceAreaAggregation.map((item) => ({
+        text: `${item._id} (${item.count})`,
+        value: item._id,
+      }));
+
+      // Stage
+      const stageAggregation = await Matter.aggregate([
+        { $match: baseFilters },
+        {
+          $group: {
+            _id: "$stage",
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      const stageEnum = [
+        "intake",
+        "investigation",
+        "pleading",
+        "discovery",
+        "pretrial",
+        "trial",
+        "appeal",
+        "closed",
+      ];
+
+      const stageOptions = stageEnum.map((stage) => {
+        const aggItem = stageAggregation.find((item) => item._id === stage);
+        const count = aggItem ? aggItem.count : 0;
+        return {
+          text: `${stage.charAt(0).toUpperCase() + stage.slice(1)} (${count})`,
+          value: stage,
+        };
+      });
+
+      // Team Members (Assigned/Unassigned)
+      const teamCount = await Matter.countDocuments({
+        ...baseFilters,
+        team: { $exists: true, $not: { $size: 0 } },
+      });
+
+      const unassignedCount = await Matter.countDocuments({
+        ...baseFilters,
+        $or: [{ team: { $exists: false } }, { team: { $size: 0 } }],
+      });
+
+      const teamOptions = [
+        { text: `Assigned (${teamCount})`, value: "assigned" },
+        { text: `Unassigned (${unassignedCount})`, value: "unassigned" },
+      ];
+
+      // Opening Date Ranges
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
+      const startOfLastMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        1
+      );
+      const endOfLastMonth = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+      const openingDateCounts = await Promise.all([
+        // This Month
+        Matter.countDocuments({
+          ...baseFilters,
+          "dates.openingDate": { $gte: startOfMonth, $lte: endOfMonth },
+        }),
+        // Last Month
+        Matter.countDocuments({
+          ...baseFilters,
+          "dates.openingDate": { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        }),
+        // This Year
+        Matter.countDocuments({
+          ...baseFilters,
+          "dates.openingDate": { $gte: startOfYear, $lte: endOfYear },
+        }),
+        // Older than 1 year
+        Matter.countDocuments({
+          ...baseFilters,
+          "dates.openingDate": { $lt: startOfYear },
+        }),
+      ]);
+
+      const openingDateOptions = [
+        { text: `This Month (${openingDateCounts[0]})`, value: "this_month" },
+        { text: `Last Month (${openingDateCounts[1]})`, value: "last_month" },
+        { text: `This Year (${openingDateCounts[2]})`, value: "this_year" },
+        { text: `Older (${openingDateCounts[3]})`, value: "older" },
+      ];
+
       res.status(200).json({
         success: true,
-        data: {},
+        data: {
+          status: statusOptions,
+          priority: priorityOptions,
+          primaryAttorney: attorneyAggregation,
+          practiceArea: practiceAreaOptions,
+          stage: stageOptions,
+          teamMembers: teamOptions,
+          openingDate: openingDateOptions,
+        },
       });
     } catch (err) {
       next(err);

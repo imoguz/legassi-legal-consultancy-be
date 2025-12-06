@@ -11,7 +11,7 @@ const { uploadToCloudinaryBuffer } = require("../helpers/cloudinary");
 const Document = require("../models/document.model");
 const mongoose = require("mongoose");
 
-// Helper functions
+// YHelper functions
 const handleFileUpload = async (files, matterId, userId) => {
   const documentIds = [];
 
@@ -168,151 +168,29 @@ module.exports = {
     }
   },
 
-  // matter.controller.js - sadece readMany fonksiyonunu güncelle
   readMany: async (req, res, next) => {
     try {
-      // Custom Filter Handler - basitleştirilmiş hali
-      const customFilterHandler = async (clientFilters, req) => {
-        const finalFilters = { isDeleted: false };
+      let baseFilters;
 
-        // User authorization controls
-        if (!["admin", "manager"].includes(req.user.role)) {
-          finalFilters.$or = [
+      if (req.user.role === "admin" || req.user.role === "manager") {
+        baseFilters = { isDeleted: false };
+      } else if (req.user.role === "staff") {
+        baseFilters = {
+          isDeleted: false,
+          $or: [
             { primaryAttorney: req.user.id },
             { "team.user": req.user.id },
             { permittedUsers: req.user.id },
-          ];
-        }
-
-        Object.keys(clientFilters).forEach((key) => {
-          const value = clientFilters[key];
-
-          // Opening Date filters
-          if (key === "openingDate") {
-            const now = new Date();
-
-            switch (value) {
-              case "this_month":
-                const startOfMonth = new Date(
-                  now.getFullYear(),
-                  now.getMonth(),
-                  1
-                );
-                const endOfMonth = new Date(
-                  now.getFullYear(),
-                  now.getMonth() + 1,
-                  0,
-                  23,
-                  59,
-                  59,
-                  999
-                );
-                finalFilters["dates.openingDate"] = {
-                  $gte: startOfMonth,
-                  $lte: endOfMonth,
-                };
-                break;
-              case "last_month":
-                const startOfLastMonth = new Date(
-                  now.getFullYear(),
-                  now.getMonth() - 1,
-                  1
-                );
-                const endOfLastMonth = new Date(
-                  now.getFullYear(),
-                  now.getMonth(),
-                  0,
-                  23,
-                  59,
-                  59,
-                  999
-                );
-                finalFilters["dates.openingDate"] = {
-                  $gte: startOfLastMonth,
-                  $lte: endOfLastMonth,
-                };
-                break;
-              case "this_year":
-                const startOfYear = new Date(now.getFullYear(), 0, 1);
-                const endOfYear = new Date(
-                  now.getFullYear(),
-                  11,
-                  31,
-                  23,
-                  59,
-                  59,
-                  999
-                );
-                finalFilters["dates.openingDate"] = {
-                  $gte: startOfYear,
-                  $lte: endOfYear,
-                };
-                break;
-              case "older":
-                const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-                finalFilters["dates.openingDate"] = { $lt: startOfThisYear };
-                break;
-              default:
-                if (Array.isArray(value) && value.length === 2) {
-                  finalFilters["dates.openingDate"] = {
-                    $gte: new Date(value[0]),
-                    $lte: new Date(value[1]),
-                  };
-                } else if (value) {
-                  finalFilters["dates.openingDate"] = new Date(value);
-                }
-            }
-          }
-
-          // Team Members filter
-          else if (key === "teamMembers") {
-            if (value === "unassigned") {
-              finalFilters.$or = [
-                { team: { $exists: false } },
-                { team: { $size: 0 } },
-              ];
-            } else if (value === "assigned") {
-              finalFilters.team = { $exists: true, $not: { $size: 0 } };
-            }
-          }
-
-          // Primary Attorney filter
-          else if (key === "primaryAttorney") {
-            if (Array.isArray(value)) {
-              if (value.length === 1) {
-                finalFilters[key] = value[0];
-              } else if (value.length > 1) {
-                finalFilters[key] = { $in: value };
-              }
-            } else {
-              finalFilters[key] = value;
-            }
-          }
-
-          // Other filters (status, priority, stage, practiceArea)
-          else {
-            if (Array.isArray(value)) {
-              if (value.length === 1) {
-                finalFilters[key] = value[0];
-              } else if (value.length > 1) {
-                finalFilters[key] = { $in: value };
-              }
-            } else {
-              finalFilters[key] = value;
-            }
-          }
-        });
-
-        return finalFilters;
-      };
+          ],
+        };
+      } else {
+        baseFilters = { _id: null };
+      }
 
       const matters = await req.queryHandler(
         Matter,
         [
-          {
-            path: "client",
-            select: "_id fullName email phone companyName",
-          },
+          { path: "client" },
           {
             path: "primaryAttorney",
             select: "_id firstname lastname email role position profileUrl",
@@ -325,9 +203,20 @@ module.exports = {
             path: "invoices",
             select: "invoiceNumber status totalAmount balanceDue",
           },
+          {
+            path: "notes.author",
+            select: "_id firstname lastname email role position profileUrl",
+          },
+          {
+            path: "notes.attachments",
+          },
+          {
+            path: "notes.permittedUsers",
+            select: "_id firstname lastname email role position profileUrl",
+          },
         ],
-        ["title", "practiceArea", "matterNumber", "description"], // Searchable fields
-        customFilterHandler
+        ["title", "practiceArea", "matterNumber", "description"],
+        baseFilters
       );
 
       res.status(200).json(matters);
@@ -946,37 +835,6 @@ module.exports = {
       });
 
       res.status(204).send();
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // matter.controller.js - sonuna ekle
-  getMatterStats: async (req, res, next) => {
-    try {
-      let baseFilters = { isDeleted: false };
-
-      if (!["admin", "manager"].includes(req.user.role)) {
-        baseFilters.$or = [
-          { primaryAttorney: req.user.id },
-          { "team.user": req.user.id },
-          { permittedUsers: req.user.id },
-        ];
-      }
-
-      const matters = await Matter.find(baseFilters);
-
-      const stats = {
-        total: matters.length,
-        open: matters.filter((matter) => matter.status === "open").length,
-        active: matters.filter((matter) => matter.status === "active").length,
-        pending: matters.filter((matter) => matter.status === "pending").length,
-        closed: matters.filter((matter) => matter.status === "closed").length,
-        archived: matters.filter((matter) => matter.status === "archived")
-          .length,
-      };
-
-      res.status(200).json(stats);
     } catch (err) {
       next(err);
     }

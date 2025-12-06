@@ -15,11 +15,19 @@ router
   .post(requirePermission("CREATE_MATTER"), matterController.create)
   .get(requirePermission("LIST_MATTERS"), matterController.readMany);
 
-router
-  .route("/:id")
-  .get(requirePermission("VIEW_MATTER"), matterController.readOne)
-  .put(requirePermission("UPDATE_MATTER"), matterController.update)
-  .delete(requirePermission("DELETE_MATTER"), matterController._delete);
+// stats
+router.get(
+  "/stats",
+  requirePermission("LIST_MATTERS"),
+  matterController.getMatterStats
+);
+
+// Admin routes
+router.delete(
+  "/purge/:id",
+  requirePermission("PURGE_RECORD"),
+  matterController.purge
+);
 
 // Note CRUD Routes
 router
@@ -52,11 +60,10 @@ router.put(
   matterController.updateFinancials
 );
 
-// Admin routes
-router.delete(
-  "/purge/:id",
-  requirePermission("PURGE_RECORD"),
-  matterController.purge
-);
+router
+  .route("/:id")
+  .get(requirePermission("VIEW_MATTER"), matterController.readOne)
+  .put(requirePermission("UPDATE_MATTER"), matterController.update)
+  .delete(requirePermission("DELETE_MATTER"), matterController._delete);
 
 module.exports = router;
